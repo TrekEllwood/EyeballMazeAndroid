@@ -7,9 +7,9 @@ import android.graphics.Path;
 import android.util.AttributeSet;
 import android.view.View;
 
-import nz.ac.ara.tre46.eyeballmaze.models.Square;
-import nz.ac.ara.tre46.eyeballmaze.enums.Shape;
 import nz.ac.ara.tre46.eyeballmaze.enums.Color;
+import nz.ac.ara.tre46.eyeballmaze.enums.Shape;
+import nz.ac.ara.tre46.eyeballmaze.models.Square;
 
 public class MazeView extends View {
     private Square[][] board;
@@ -17,10 +17,10 @@ public class MazeView extends View {
     private int eyeballCol = -1;
     private boolean currentGoal = false;
 
-    private Paint linePaint;
-    private Paint fillPaint;
-    private Paint eyeballPaint;
-    private Paint goalPaint;
+    private final Paint linePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint fillPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint eyeballPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint goalPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     public MazeView(Context context) {
         super(context);
@@ -38,34 +38,33 @@ public class MazeView extends View {
     }
 
     private void init() {
-        linePaint = new Paint();
         linePaint.setStyle(Paint.Style.STROKE);
         linePaint.setStrokeWidth(4);
 
-        fillPaint = new Paint();
         fillPaint.setStyle(Paint.Style.FILL);
 
-        eyeballPaint = new Paint();
         eyeballPaint.setStyle(Paint.Style.FILL);
         eyeballPaint.setColor(android.graphics.Color.BLACK);
 
-        goalPaint = new Paint();
         goalPaint.setStyle(Paint.Style.STROKE);
         goalPaint.setStrokeWidth(8);
         goalPaint.setColor(android.graphics.Color.YELLOW);
     }
 
+    /** Called by your Activity when the ViewModel’s board LiveData changes */
     public void setBoard(Square[][] board) {
         this.board = board;
         invalidate();
     }
 
+    /** Called by your Activity when the ViewModel’s eyeball‐row/col change */
     public void setEyeballPosition(int row, int col) {
         this.eyeballRow = row;
         this.eyeballCol = col;
         invalidate();
     }
 
+    /** Called by your Activity when the ViewModel’s goal‐flag changes */
     public void setCurrentSquareIsGoal(boolean isGoal) {
         this.currentGoal = isGoal;
         invalidate();
@@ -75,115 +74,115 @@ public class MazeView extends View {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         if (board == null) return;
+
         int rows = board.length;
         int cols = board[0].length;
-        float cellWidth = (float) getWidth() / cols;
-        float cellHeight = (float) getHeight() / rows;
+        float cellW = (float) getWidth() / cols;
+        float cellH = (float) getHeight() / rows;
 
+        // draw grid
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {
-                float left = c * cellWidth;
-                float top = r * cellHeight;
-                float right = left + cellWidth;
-                float bottom = top + cellHeight;
+                float left = c * cellW;
+                float top = r * cellH;
+                float right = left + cellW;
+                float bottom = top + cellH;
 
-                // Draw cell background
+                // background color
                 Square sq = board[r][c];
-                fillPaint.setColor(getAndroidColor(sq.getColor()));
+                fillPaint.setColor(toAndroidColor(sq.getColor()));
                 canvas.drawRect(left, top, right, bottom, fillPaint);
 
-                // Draw shape in cell
-                drawShape(canvas, sq.getShape(), left, top, cellWidth, cellHeight);
+                // shape
+                drawShape(canvas, sq.getShape(), left, top, cellW, cellH);
 
-                // Draw cell border
+                // cell border
                 canvas.drawRect(left, top, right, bottom, linePaint);
             }
         }
 
-        // Highlight current square if it's a goal
+        // highlight goal cell
         if (currentGoal && eyeballRow >= 0 && eyeballCol >= 0) {
-            float left = eyeballCol * cellWidth;
-            float top = eyeballRow * cellHeight;
-            float right = left + cellWidth;
-            float bottom = top + cellHeight;
+            float left = eyeballCol * cellW;
+            float top = eyeballRow * cellH;
+            float right = left + cellW;
+            float bottom = top + cellH;
             canvas.drawRect(left, top, right, bottom, goalPaint);
         }
 
-        // Draw the eyeball
+        // draw eyeball
         if (eyeballRow >= 0 && eyeballCol >= 0) {
-            float cx = eyeballCol * cellWidth + cellWidth / 2;
-            float cy = eyeballRow * cellHeight + cellHeight / 2;
-            float radius = Math.min(cellWidth, cellHeight) * 0.3f;
+            float cx = eyeballCol * cellW + cellW/2;
+            float cy = eyeballRow * cellH + cellH/2;
+            float radius = Math.min(cellW, cellH) * 0.3f;
             canvas.drawCircle(cx, cy, radius, eyeballPaint);
         }
     }
 
-    private int getAndroidColor(Color mazeColor) {
-        return switch (mazeColor) {
-            case RED -> android.graphics.Color.RED;
-            case GREEN -> android.graphics.Color.GREEN;
-            case BLUE -> android.graphics.Color.BLUE;
+    private int toAndroidColor(Color c) {
+        return switch (c) {
+            case RED    -> android.graphics.Color.RED;
+            case GREEN  -> android.graphics.Color.GREEN;
+            case BLUE   -> android.graphics.Color.BLUE;
             case YELLOW -> android.graphics.Color.YELLOW;
             case PURPLE -> android.graphics.Color.MAGENTA;
-            case BLANK -> android.graphics.Color.LTGRAY;
-            default -> android.graphics.Color.LTGRAY;
+            default     -> android.graphics.Color.WHITE;
         };
     }
 
     private void drawShape(Canvas canvas, Shape shape,
                            float left, float top,
-                           float width, float height) {
-        float cx = left + width / 2;
-        float cy = top + height / 2;
-        float size = Math.min(width, height) * 0.4f;
-        Path path = new Path();
+                           float w, float h) {
+        float cx = left + w/2, cy = top + h/2;
+        float size = Math.min(w, h) * 0.4f;
+        Path p = new Path();
 
         switch (shape) {
-            case DIAMOND:
-                path.moveTo(cx, cy - size);
-                path.lineTo(cx - size, cy);
-                path.lineTo(cx, cy + size);
-                path.lineTo(cx + size, cy);
-                path.close();
-                canvas.drawPath(path, linePaint);
-                break;
-            case CROSS:
-                canvas.drawLine(cx - size, cy - size, cx + size, cy + size, linePaint);
-                canvas.drawLine(cx - size, cy + size, cx + size, cy - size, linePaint);
-                break;
-            case STAR:
+            case DIAMOND -> {
+                p.moveTo(cx, cy - size);
+                p.lineTo(cx - size, cy);
+                p.lineTo(cx, cy + size);
+                p.lineTo(cx + size, cy);
+                p.close();
+                canvas.drawPath(p, linePaint);
+            }
+            case CROSS -> {
+                canvas.drawLine(cx-size, cy-size, cx+size, cy+size, linePaint);
+                canvas.drawLine(cx-size, cy+size, cx+size, cy-size, linePaint);
+            }
+            case STAR -> {
                 for (int i = 0; i < 5; i++) {
-                    double angle = Math.toRadians(-90 + i * 72);
-                    double angle2 = Math.toRadians(-90 + i * 72 + 36);
-                    float x1 = cx + (float)(size * Math.cos(angle));
-                    float y1 = cy + (float)(size * Math.sin(angle));
-                    float x2 = cx + (float)(size/2 * Math.cos(angle2));
-                    float y2 = cy + (float)(size/2 * Math.sin(angle2));
-                    if (i == 0) path.moveTo(x1, y1);
-                    else path.lineTo(x1, y1);
-                    path.lineTo(x2, y2);
+                    double a1 = Math.toRadians(-90 + 72*i);
+                    double a2 = Math.toRadians(-90 + 72*i + 36);
+                    float x1 = cx + size * (float)Math.cos(a1);
+                    float y1 = cy + size * (float)Math.sin(a1);
+                    float x2 = cx + size/2 * (float)Math.cos(a2);
+                    float y2 = cy + size/2 * (float)Math.sin(a2);
+                    if (i == 0) p.moveTo(x1, y1);
+                    else p.lineTo(x1, y1);
+                    p.lineTo(x2, y2);
                 }
-                path.close();
-                canvas.drawPath(path, linePaint);
-                break;
-            case FLOWER:
+                p.close();
+                canvas.drawPath(p, linePaint);
+            }
+            case FLOWER -> {
                 for (int i = 0; i < 6; i++) {
-                    double angle = Math.toRadians(i * 60);
-                    float x = cx + (float)(size * Math.cos(angle));
-                    float y = cy + (float)(size * Math.sin(angle));
+                    double a = Math.toRadians(i * 60);
+                    float x = cx + size * (float)Math.cos(a);
+                    float y = cy + size * (float)Math.sin(a);
                     canvas.drawCircle(x, y, size/3, linePaint);
                 }
-                break;
-            case LIGHTNING:
-                path.moveTo(cx - size/2, cy - size);
-                path.lineTo(cx, cy - size/3);
-                path.lineTo(cx - size/4, cy - size/3);
-                path.lineTo(cx + size/2, cy + size);
-                canvas.drawPath(path, linePaint);
-                break;
-            case BLANK:
-                // no shape
-                break;
+            }
+            case LIGHTNING -> {
+                p.moveTo(cx-size/2, cy-size);
+                p.lineTo(cx, cy-size/3);
+                p.lineTo(cx-size/4, cy-size/3);
+                p.lineTo(cx+size/2, cy+size);
+                canvas.drawPath(p, linePaint);
+            }
+            case BLANK -> {
+                // nothing
+            }
         }
     }
 }

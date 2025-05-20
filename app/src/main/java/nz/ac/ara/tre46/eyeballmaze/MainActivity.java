@@ -7,6 +7,7 @@ import android.view.ViewGroup.LayoutParams;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
+import android.util.Log;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
@@ -20,7 +21,6 @@ import java.util.List;
 
 import nz.ac.ara.tre46.eyeballmaze.enums.Direction;
 import nz.ac.ara.tre46.eyeballmaze.interfaces.IGame;
-import nz.ac.ara.tre46.eyeballmaze.interfaces.ILevelHolder;
 import nz.ac.ara.tre46.eyeballmaze.models.Game;
 import nz.ac.ara.tre46.eyeballmaze.viewmodel.EyeballMazeViewModel;
 import nz.ac.ara.tre46.eyeballmaze.viewmodel.EyeballMazeViewModelFactory;
@@ -29,46 +29,34 @@ import nz.ac.ara.tre46.eyeballmaze.view.MazeView;
 public class MainActivity extends AppCompatActivity {
     private EyeballMazeViewModel viewModel;
     private MazeView mazeView;
+    private Game game;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // 1) Instantiate your concrete Game (implements both IGame & ILevelHolder)
-        Game game = new Game();
-//        if (game instanceof ILevelHolder) {
-//            ILevelHolder levels = (ILevelHolder) game;
-//            levels.addLevel(5, 5);
-//            levels.setLevel(levels.getLevelCount() - 1);
-//        }
+        // 1) Instantiate Game and load level text
+        game = new Game();
         String[] levelLines = loadLevelFromRaw(this, R.raw.levels);
         game.loadLevelFromText(levelLines);
 
-        // 2) Wrap it in the ViewModel via the Factory
-//        IGame gameInterface = game;
+        // 2) Wrap in ViewModel
         viewModel = new ViewModelProvider(
                 this,
-//                new EyeballMazeViewModelFactory(gameInterface)
                 new EyeballMazeViewModelFactory((IGame) game)
         ).get(EyeballMazeViewModel.class);
 
-        // 3) Build UI: full-screen MazeView + directional buttons
+        // 3) Build UI: MazeView + controls
         FrameLayout root = new FrameLayout(this);
         mazeView = new MazeView(this);
-        root.addView(
-                mazeView,
-                new FrameLayout.LayoutParams(
-                        LayoutParams.MATCH_PARENT,
-                        LayoutParams.MATCH_PARENT
-                )
-        );
+        root.addView(mazeView, new FrameLayout.LayoutParams(
+                LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT
+        ));
 
-        // 4) Directional controls
         LinearLayout controls = new LinearLayout(this);
         controls.setOrientation(LinearLayout.HORIZONTAL);
         FrameLayout.LayoutParams ctrlParams = new FrameLayout.LayoutParams(
-                LayoutParams.WRAP_CONTENT,
-                LayoutParams.WRAP_CONTENT
+                LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT
         );
         ctrlParams.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
         controls.setGravity(Gravity.CENTER);
@@ -78,7 +66,6 @@ public class MainActivity extends AppCompatActivity {
         Button left  = new Button(this); left.setText("←");
         Button right = new Button(this); right.setText("→");
 
-        // 4) Hook up explicit listeners
         up.setOnClickListener(v    -> viewModel.moveEyeball(Direction.UP));
         down.setOnClickListener(v  -> viewModel.moveEyeball(Direction.DOWN));
         left.setOnClickListener(v  -> viewModel.moveEyeball(Direction.LEFT));
@@ -92,7 +79,7 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(root);
 
-        // 5) Observe LiveData and update MazeView
+        // 4) Observe LiveData and push into MazeView
 
         // Board
         viewModel.getBoard().observe(this, board -> {
@@ -100,7 +87,7 @@ public class MainActivity extends AppCompatActivity {
             mazeView.invalidate();
         });
 
-        // Eyeball row & col
+        // Eyeball row + col
         viewModel.getEyeballRow().observe(this, row -> {
             Integer col = viewModel.getEyeballCol().getValue();
             if (col != null) {
@@ -116,17 +103,13 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // Current-goal highlight
+        // Current‐goal highlight
         viewModel.isCurrentGoal().observe(this, isGoal -> {
             mazeView.setCurrentSquareIsGoal(isGoal);
             mazeView.invalidate();
         });
     }
 
-    /**
-     * Reads a raw‐resource text file, strips out comments and blank lines,
-     * and returns the remaining lines as a String[].
-     */
     private String[] loadLevelFromRaw(Context ctx, int resId) {
         List<String> lines = new ArrayList<>();
         try (InputStream is = ctx.getResources().openRawResource(resId);

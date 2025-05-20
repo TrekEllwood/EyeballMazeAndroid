@@ -1,5 +1,5 @@
 # Maze ID, Start Row, Start Col, Start Direction, Start Square
-1,6,1,u,BLUE_DIAMOND
+1,5,1,u,BLUE_DIAMOND
 
 # Grid Layout (6 rows, 4 columns)
 BLANK_BLANK,BLANK_BLANK,RED_FLOWER,BLANK_BLANK

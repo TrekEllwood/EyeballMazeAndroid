@@ -46,31 +46,114 @@ public class Game implements IGame, IGoalHolder, IEyeballHolder, ILevelHolder, I
 	setLevel(levelHolder.getLevelCount() - 1);
     }
 
+//    @Override
+//    public void setLevel(int levelNumber) {
+//        levelHolder.setLevel(levelNumber);
+//        if (levelHolder instanceof LevelHolder) {
+//            currentMaze = ((LevelHolder) levelHolder).getCurrentMaze();
+//        }
+//        if (currentMaze != null) {
+//            int width = getLevelWidth();
+//            int height = getLevelHeight();
+//
+//            squareHolder = new SquareHolder(currentMaze); // ADDED
+//            squareHolder.resetBoard(width, height);
+//
+//            player = new Player(currentMaze.getStartRow(), currentMaze.getStartCol(),
+//                currentMaze.getStartOrientation());
+//
+//            Set<IGoal> mazeGoals = new HashSet<>(currentMaze.getMazeGoals());
+//            goalHolder.setGoals(mazeGoals);
+//        }
+//    }
+
+//    @Override
+//    public void setLevel(int levelNumber) {
+//        levelHolder.setLevel(levelNumber);
+//        if (levelHolder instanceof LevelHolder) {
+//            currentMaze = ((LevelHolder) levelHolder).getCurrentMaze();
+//        }
+//        if (currentMaze != null) {
+//            int width = getLevelWidth();
+//            int height = getLevelHeight();
+//
+//            // Initialize squareHolder and reset to blanks
+//            squareHolder = new SquareHolder(currentMaze);
+//            squareHolder.resetBoard(width, height);
+//
+//            // Populate from the loaded maze data
+//            nz.ac.ara.tre46.eyeballmaze.models.Square[][] boardData = currentMaze.getBoardData();
+//            for (int r = 0; r < height; r++) {
+//                for (int c = 0; c < width; c++) {
+//                    nz.ac.ara.tre46.eyeballmaze.models.Square sq = boardData[r][c];
+//                    if (!(sq instanceof BlankSquare)) {
+//                        squareHolder.addSquare(sq, r, c);
+//                    }
+//                }
+//            }
+//
+//            // Set up the eyeball
+//            player = new Player(
+//                    currentMaze.getStartRow(),
+//                    currentMaze.getStartCol(),
+//                    currentMaze.getStartOrientation()
+//            );
+//
+//            // Initialize goals
+//            Set<IGoal> mazeGoals = new HashSet<>(currentMaze.getMazeGoals());
+//            goalHolder.setGoals(mazeGoals);
+//        }
+//    }
+
+    // CHANGE
     @Override
     public void setLevel(int levelNumber) {
-	levelHolder.setLevel(levelNumber);
-	if (levelHolder instanceof LevelHolder) {
-	    currentMaze = ((LevelHolder) levelHolder).getCurrentMaze();
-	}
-	if (currentMaze != null) {
-	    int width = getLevelWidth();
-	    int height = getLevelHeight();
+        levelHolder.setLevel(levelNumber);
+        currentMaze = ((LevelHolder) levelHolder).getCurrentMaze();
+        if (currentMaze == null) return;
 
-        squareHolder = new SquareHolder(currentMaze); // ADDED
-	    squareHolder.resetBoard(width, height);
+        int H = getLevelHeight();
+        int W = getLevelWidth();
 
-	    player = new Player(currentMaze.getStartRow(), currentMaze.getStartCol(),
-		    currentMaze.getStartOrientation());
+        // Initialize SquareHolder
+        squareHolder = new SquareHolder(currentMaze);
+        squareHolder.resetBoard(W, H);
 
-	    Set<IGoal> mazeGoals = new HashSet<>(currentMaze.getMazeGoals());
-	    goalHolder.setGoals(mazeGoals);
-	}
+        // Copy non-blank squares
+        Square[][] board = currentMaze.getBoardData();
+        for (int r = 0; r < H; r++) {
+            for (int c = 0; c < W; c++) {
+                Square sq = board[r][c];
+                if (!(sq instanceof BlankSquare)) {
+                    squareHolder.addSquare(sq, r, c);
+                }
+            }
+        }
+
+        // Setup player
+        player = new Player(
+                currentMaze.getStartRow(),
+                currentMaze.getStartCol(),
+                currentMaze.getStartOrientation()
+        );
+
+        // Goals
+        Set<IGoal> goals = new HashSet<>(currentMaze.getMazeGoals());
+        goalHolder.setGoals(goals);
     }
 
+    @Override
+    public void loadLevelFromText(String[] lines) {
+        levelHolder.loadLevelFromText(lines);
+        setLevel(levelHolder.getLevelCount() - 1);
+    }
+
+    @Override
     public int getLevelWidth() {
 	return levelHolder.getLevelWidth();
     }
 
+    @Override
     public int getLevelHeight() {
 	return levelHolder.getLevelHeight();
     }
@@ -78,12 +161,6 @@ public class Game implements IGame, IGoalHolder, IEyeballHolder, ILevelHolder, I
     @Override
     public int getLevelCount() {
 	return levelHolder.getLevelCount();
-    }
-
-    @Override
-    public void loadLevelFromText(String[] lines) {
-        levelHolder.loadLevelFromText(lines);
-        setLevel(levelHolder.getLevelCount() - 1);
     }
 
     @Override

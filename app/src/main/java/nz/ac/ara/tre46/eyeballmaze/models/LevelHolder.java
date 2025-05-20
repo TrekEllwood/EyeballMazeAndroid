@@ -2,6 +2,7 @@ package nz.ac.ara.tre46.eyeballmaze.models;
 
 import java.util.ArrayList;
 import java.util.List;
+import android.util.Log;
 
 import nz.ac.ara.tre46.eyeballmaze.enums.Color;
 import nz.ac.ara.tre46.eyeballmaze.enums.Direction;
@@ -114,6 +115,20 @@ public class LevelHolder implements ILevelHolder {
 			}
 		}
 
+		// ─── DEBUG: dump loaded boardData ─────────────────────────────────────
+		for (int r = 0; r < H; r++) {
+			for (int c = 0; c < W; c++) {
+				Square sq = boardData[r][c];
+				Log.d("LevelHolder", String.format(
+						"loaded boardData[%d][%d] = %s_%s",
+						r, c,
+						sq.getColor(),
+						sq.getShape()
+				));
+			}
+		}
+		// ─────────────────────────────────────────────────────────────────────
+
 		// 3) Goal
 		String[] g = lines[1 + H].split(",", 2);
 		int goalRow = Integer.parseInt(g[0]);
@@ -129,12 +144,12 @@ public class LevelHolder implements ILevelHolder {
 	}
 
 	private Direction parseDirection(String code) {
-		switch (code.toLowerCase()) {
-			case "u": return Direction.UP;
-			case "d": return Direction.DOWN;
-			case "l": return Direction.LEFT;
-			case "r": return Direction.RIGHT;
-			default: throw new IllegalArgumentException("Invalid dir: " + code);
-		}
+        return switch (code.toLowerCase()) {
+            case "u" -> Direction.UP;
+            case "d" -> Direction.DOWN;
+            case "l" -> Direction.LEFT;
+            case "r" -> Direction.RIGHT;
+            default -> throw new IllegalArgumentException("Invalid dir: " + code);
+        };
 	}
 }
