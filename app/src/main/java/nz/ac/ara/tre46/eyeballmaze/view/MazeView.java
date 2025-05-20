@@ -119,15 +119,15 @@ public class MazeView extends View {
     }
 
     private int getAndroidColor(Color mazeColor) {
-        switch (mazeColor) {
-            case RED:    return android.graphics.Color.RED;
-            case GREEN:  return android.graphics.Color.GREEN;
-            case BLUE:   return android.graphics.Color.BLUE;
-            case YELLOW: return android.graphics.Color.YELLOW;
-            case PURPLE: return android.graphics.Color.MAGENTA;
-            case BLANK:  return android.graphics.Color.LTGRAY;
-            default:     return android.graphics.Color.LTGRAY;
-        }
+        return switch (mazeColor) {
+            case RED -> android.graphics.Color.RED;
+            case GREEN -> android.graphics.Color.GREEN;
+            case BLUE -> android.graphics.Color.BLUE;
+            case YELLOW -> android.graphics.Color.YELLOW;
+            case PURPLE -> android.graphics.Color.MAGENTA;
+            case BLANK -> android.graphics.Color.LTGRAY;
+            default -> android.graphics.Color.LTGRAY;
+        };
     }
 
     private void drawShape(Canvas canvas, Shape shape,

@@ -81,6 +81,12 @@ public class Game implements IGame, IGoalHolder, IEyeballHolder, ILevelHolder, I
     }
 
     @Override
+    public void loadLevelFromText(String[] lines) {
+        levelHolder.loadLevelFromText(lines);
+        setLevel(levelHolder.getLevelCount() - 1);
+    }
+
+    @Override
     public int getEyeballRow() {
 	return (player != null) ? player.getRow() : -1;
     }

@@ -10,4 +10,7 @@ public interface ILevelHolder {
     public void setLevel(int levelNumber);
 
     public int getLevelCount();
+
+    // NEW
+    void loadLevelFromText(String[] strippedLines);
 }
