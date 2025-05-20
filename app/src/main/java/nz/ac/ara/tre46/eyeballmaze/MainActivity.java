@@ -22,6 +22,7 @@ import java.util.List;
 import nz.ac.ara.tre46.eyeballmaze.enums.Direction;
 import nz.ac.ara.tre46.eyeballmaze.interfaces.IGame;
 import nz.ac.ara.tre46.eyeballmaze.models.Game;
+import nz.ac.ara.tre46.eyeballmaze.models.Square; // Only for DEBUGGING
 import nz.ac.ara.tre46.eyeballmaze.viewmodel.EyeballMazeViewModel;
 import nz.ac.ara.tre46.eyeballmaze.viewmodel.EyeballMazeViewModelFactory;
 import nz.ac.ara.tre46.eyeballmaze.view.MazeView;
@@ -45,6 +46,25 @@ public class MainActivity extends AppCompatActivity {
                 this,
                 new EyeballMazeViewModelFactory((IGame) game)
         ).get(EyeballMazeViewModel.class);
+
+        // DEBUG
+        final boolean[] logged = { false }; // simple one‐time guard
+        viewModel.getBoard().observe(this, board -> {
+            if (logged[0] || board == null) return;
+            logged[0] = true;
+
+            for (int r = 0; r < board.length; r++) {
+                for (int c = 0; c < board[0].length; c++) {
+                    Square sq = board[r][c];
+                    Log.d("INIT_BOARD", String.format(
+                            "[%d,%d] = %s_%s",
+                            r, c,
+                            sq.getColor(),
+                            sq.getShape()
+                    ));
+                }
+            }
+        });
 
         // 3) Build UI: MazeView + controls
         FrameLayout root = new FrameLayout(this);
