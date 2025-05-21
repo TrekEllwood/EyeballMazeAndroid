@@ -37,6 +37,8 @@ public interface IGame {
     public void completedGoal(int row, int column);
 
     // NEW: all below this line ---
+    public int getCurrentMazeId();
+
     boolean canMoveTo(int destinationRow, int destinationColumn);
 
     Message messageIfMovingTo(int destinationRow, int destinationColumn);
@@ -70,4 +72,6 @@ public interface IGame {
     public int getBoardHeight();
 
     public int getBoardWidth();
+
+    public int getMazeIdAt(int index);
 }

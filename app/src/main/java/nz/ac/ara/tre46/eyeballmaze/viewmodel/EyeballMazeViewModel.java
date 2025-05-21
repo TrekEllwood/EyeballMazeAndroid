@@ -37,7 +37,6 @@ public class EyeballMazeViewModel extends ViewModel {
 //    }
 
     // === Accessors ===
-//    public LiveData<Square[][]> getBoard() { return boardLiveData; }
     public LiveData<Integer> getEyeballRow() { return rowLiveData; }
     public LiveData<Integer> getEyeballCol() { return colLiveData; }
     public LiveData<Direction> getEyeballDir() { return dirLiveData; }
@@ -51,6 +50,10 @@ public class EyeballMazeViewModel extends ViewModel {
     public void resetMaze() {
         game.resetCurrentLevel();
         syncGameState();
+    }
+
+    public int getCurrentMazeId() {
+        return game.getCurrentMazeId();
     }
 
     public int getBoardWidth() {
@@ -126,5 +129,9 @@ public class EyeballMazeViewModel extends ViewModel {
         game.setLevel(index);
         currentLevelIndex = index;
         syncGameState();
+    }
+
+    public int getMazeIdAt(int index) {
+        return game.getMazeIdAt(index);
     }
 }

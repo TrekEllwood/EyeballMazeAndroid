@@ -137,15 +137,18 @@ public class Game implements IGame, IGoalHolder, IEyeballHolder, ILevelHolder, I
         goalHolder.setGoals(goals);
     }
 
-    // ADDED
     @Override
-    public void loadLevelFromText(String[] lines) {
+    public void loadLevelFromText(String[] lines) { // ADDED
         levelHolder.loadLevelFromText(lines);
 //        setLevel(levelHolder.getLevelCount() - 1);
         if (levelHolder.getLevelCount() == 0) {
             throw new IllegalStateException("No levels were loaded. Check level file format.");
         }
         setLevel(0);
+    }
+
+    public int getCurrentMazeId() { // ADDED
+        return (currentMaze != null) ? currentMaze.getMazeNumber() : -1;
     }
 
     @Override
@@ -364,5 +367,14 @@ public class Game implements IGame, IGoalHolder, IEyeballHolder, ILevelHolder, I
 
     public int getBoardWidth() {
         return levelHolder.getLevelWidth();
+    }
+
+    @Override
+    public int getMazeIdAt(int index) { // ADDED
+        if (levelHolder instanceof LevelHolder holder) {
+            IMaze maze = holder.getMazeAt(index);
+            return (maze != null) ? maze.getMazeNumber() : index + 1;
+        }
+        return index + 1;
     }
 }

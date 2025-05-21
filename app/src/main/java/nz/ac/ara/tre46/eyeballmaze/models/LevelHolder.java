@@ -75,6 +75,13 @@ public class LevelHolder implements ILevelHolder {
 	// ADDED: NEW
 	public int getMazeIndex(IMaze maze) { return levels.indexOf(maze); }
 
+	public IMaze getMazeAt(int index) {
+		if (index >= 0 && index < levels.size()) {
+			return levels.get(index);
+		}
+		return null;
+	}
+
 	/**
 	 * Parses stripped level text (no comments) and adds a new Maze.
 	 * Format:
