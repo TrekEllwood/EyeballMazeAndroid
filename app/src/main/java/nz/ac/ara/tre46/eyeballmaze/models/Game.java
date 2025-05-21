@@ -67,45 +67,7 @@ public class Game implements IGame, IGoalHolder, IEyeballHolder, ILevelHolder, I
 //        }
 //    }
 
-//    @Override
-//    public void setLevel(int levelNumber) {
-//        levelHolder.setLevel(levelNumber);
-//        if (levelHolder instanceof LevelHolder) {
-//            currentMaze = ((LevelHolder) levelHolder).getCurrentMaze();
-//        }
-//        if (currentMaze != null) {
-//            int width = getLevelWidth();
-//            int height = getLevelHeight();
-//
-//            // Initialize squareHolder and reset to blanks
-//            squareHolder = new SquareHolder(currentMaze);
-//            squareHolder.resetBoard(width, height);
-//
-//            // Populate from the loaded maze data
-//            nz.ac.ara.tre46.eyeballmaze.models.Square[][] boardData = currentMaze.getBoardData();
-//            for (int r = 0; r < height; r++) {
-//                for (int c = 0; c < width; c++) {
-//                    nz.ac.ara.tre46.eyeballmaze.models.Square sq = boardData[r][c];
-//                    if (!(sq instanceof BlankSquare)) {
-//                        squareHolder.addSquare(sq, r, c);
-//                    }
-//                }
-//            }
-//
-//            // Set up the eyeball
-//            player = new Player(
-//                    currentMaze.getStartRow(),
-//                    currentMaze.getStartCol(),
-//                    currentMaze.getStartOrientation()
-//            );
-//
-//            // Initialize goals
-//            Set<IGoal> mazeGoals = new HashSet<>(currentMaze.getMazeGoals());
-//            goalHolder.setGoals(mazeGoals);
-//        }
-//    }
-
-    // CHANGE
+    // CHANGE: So maze does not get overridden by blanks
     @Override
     public void setLevel(int levelNumber) {
         levelHolder.setLevel(levelNumber);
@@ -142,9 +104,14 @@ public class Game implements IGame, IGoalHolder, IEyeballHolder, ILevelHolder, I
         goalHolder.setGoals(goals);
     }
 
+    // ADDED
     @Override
     public void loadLevelFromText(String[] lines) {
         levelHolder.loadLevelFromText(lines);
+//        setLevel(levelHolder.getLevelCount() - 1);
+        if (levelHolder.getLevelCount() == 0) {
+            throw new IllegalStateException("No levels were loaded. Check level file format.");
+        }
         setLevel(levelHolder.getLevelCount() - 1);
     }
 
@@ -291,10 +258,12 @@ public class Game implements IGame, IGoalHolder, IEyeballHolder, ILevelHolder, I
 	return squareHolder.getShapeAt(row, column);
     }
 
+    @Override // ADDED
     public boolean canMoveTo(int destinationRow, int destinationColumn) {
 	return moving.canMoveTo(destinationRow, destinationColumn);
     }
 
+    @Override // ADDED
     public Message messageIfMovingTo(int destinationRow, int destinationColumn) {
 	return moving.messageIfMovingTo(destinationRow, destinationColumn);
     }
@@ -315,6 +284,7 @@ public class Game implements IGame, IGoalHolder, IEyeballHolder, ILevelHolder, I
 	return moving.checkMessageForBlankOnPathTo(destinationRow, destinationColumn);
     }
 
+    @Override // ADDED
     public void moveTo(int destinationRow, int destinationColumn) {
 	moving.moveTo(destinationRow, destinationColumn);
     }
@@ -333,5 +303,16 @@ public class Game implements IGame, IGoalHolder, IEyeballHolder, ILevelHolder, I
     @Override
     public void setCurrentSquareGoal(boolean flag) {
 	currentSquareWasGoal = flag;
+    }
+
+    // ADDED
+    @Override
+    public void resetCurrentLevel() {
+        if (levelHolder instanceof LevelHolder holder) {
+            IMaze current = holder.getCurrentMaze();
+            int index = holder.getMazeIndex(current);
+            holder.resetCurrentLevelFromText();
+            setLevel(index);
+        }
     }
 }

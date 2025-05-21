@@ -1,6 +1,7 @@
 package nz.ac.ara.tre46.eyeballmaze.interfaces;
 
 import nz.ac.ara.tre46.eyeballmaze.enums.Direction;
+import nz.ac.ara.tre46.eyeballmaze.enums.Message;
 import nz.ac.ara.tre46.eyeballmaze.models.Square;
 
 public interface IGame {
@@ -27,4 +28,21 @@ public interface IGame {
     public void setCurrentSquareGoal(boolean flag);
 
     public void completedGoal(int row, int column);
+
+    // NEW: all below this line ---
+    boolean canMoveTo(int destinationRow, int destinationColumn);
+
+    Message messageIfMovingTo(int destinationRow, int destinationColumn);
+
+    void moveTo(int destinationRow, int destinationColumn);
+
+    void addGoal(int row, int col);
+
+    void addEyeball(int row, int col, Direction direction);
+
+    void addSquare(Square square, int row, int col);
+
+    void resetBoard(int width, int height);
+
+    void resetCurrentLevel();
 }

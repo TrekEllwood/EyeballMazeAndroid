@@ -137,38 +137,52 @@ public class Moving implements IMoving {
 	return hasBlankFreePathTo(destinationRow, destinationColumn) ? Message.OK : Message.MOVING_OVER_BLANK;
     }
 
+	// CHANGE: for better handling of square changes...
     @Override
     public void moveTo(int destinationRow, int destinationColumn) {
-	Message msg = messageIfMovingTo(destinationRow, destinationColumn);
-	if (msg != Message.OK) {
-	    System.out.println("Move error: " + msg);
-	    return;
-	}
-	int currentRow = game.getEyeballRow();
-	int currentColumn = game.getEyeballColumn();
-	Square[][] board = game.getBoardData();
+		Message msg = messageIfMovingTo(destinationRow, destinationColumn);
+		if (msg != Message.OK) {
+			System.out.println("Move error: " + msg);
+			return;
+		}
+		int currentRow = game.getEyeballRow();
+		int currentColumn = game.getEyeballColumn();
+//		Square[][] board = game.getBoardData();
 
-	// If leaving a square that was marked as a goal, update that square to BlankSquare.
-	if (game.isCurrentSquareGoal() && (destinationRow != currentRow || destinationColumn != currentColumn)) {
-	    board[currentRow][currentColumn] = new BlankSquare();
-	    game.setCurrentSquareGoal(false);
-	}
-	// If the destination square is a goal, complete it immediately.
-	if (game.hasGoalAt(destinationRow, destinationColumn)) {
-	    game.completedGoal(destinationRow, destinationColumn);
-	    game.setCurrentSquareGoal(true);
-	} else {
-	    game.setCurrentSquareGoal(false);
-	}
+		// If leaving a square that was marked as a goal, update that square to BlankSquare.
+	//	if (game.isCurrentSquareGoal() && (destinationRow != currentRow || destinationColumn != currentColumn)) {
+	//	    board[currentRow][currentColumn] = new BlankSquare();
+	//	    game.setCurrentSquareGoal(false);
+	//	}
 
-	// Update orientation based on move direction.
-	if (destinationRow != currentRow) {
-	    game.setEyeballDirection(destinationRow > currentRow ? Direction.DOWN : Direction.UP);
-	} else if (destinationColumn != currentColumn) {
-	    game.setEyeballDirection(destinationColumn > currentColumn ? Direction.RIGHT : Direction.LEFT);
-	}
-	// Update the current position.
-	game.setEyeballRow(destinationRow);
-	game.setEyeballColumn(destinationColumn);
+//		if (game.isCurrentSquareGoal()
+//				&& game.hasGoalAt(currentRow, currentColumn)
+//				&& (destinationRow != currentRow || destinationColumn != currentColumn)) {
+//
+//			game.removeGoalAt(currentRow, currentColumn);
+//			game.completedGoal(currentRow, currentColumn);
+//			game.setCurrentSquareGoal(false);
+//			game.addSquare(new BlankSquare(), currentRow, currentColumn);
+//		}
+
+		if (game.hasGoalAt(currentRow, currentColumn)) {
+			game.completedGoal(currentRow, currentColumn);
+			game.removeGoalAt(currentRow, currentColumn);
+			game.setCurrentSquareGoal(false);
+			game.addSquare(new BlankSquare(), currentRow, currentColumn);
+		}
+
+		// Update orientation based on move direction.
+		if (destinationRow != currentRow) {
+			game.setEyeballDirection(destinationRow > currentRow ? Direction.DOWN : Direction.UP);
+		} else if (destinationColumn != currentColumn) {
+			game.setEyeballDirection(destinationColumn > currentColumn ? Direction.RIGHT : Direction.LEFT);
+		}
+		// Update the current position.
+		game.setEyeballRow(destinationRow);
+		game.setEyeballColumn(destinationColumn);
+
+		// If the destination square is a goal, complete it immediately.
+        game.setCurrentSquareGoal(game.hasGoalAt(destinationRow, destinationColumn));
     }
 }
