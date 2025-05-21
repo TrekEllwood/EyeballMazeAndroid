@@ -24,6 +24,7 @@ public class EyeballMazeViewModel extends ViewModel {
     private final MutableLiveData<Direction> dirLiveData = new MutableLiveData<>();
     private final MutableLiveData<Boolean> currentGoalLiveData = new MutableLiveData<>();
     private final MutableLiveData<Message> moveStatusLiveData = new MutableLiveData<>();
+    private final MutableLiveData<Integer> goalsRemaining = new MutableLiveData<>();
 
     private int currentLevelIndex = 0;
 
@@ -42,6 +43,7 @@ public class EyeballMazeViewModel extends ViewModel {
     public LiveData<Direction> getEyeballDir() { return dirLiveData; }
     public LiveData<Boolean> isCurrentGoal() { return currentGoalLiveData; }
     public LiveData<Message> getMoveStatus() { return moveStatusLiveData; }
+    public LiveData<Integer> getGoalsRemaining() { return goalsRemaining; }
 
     public void clearMoveStatus() {
         moveStatusLiveData.setValue(null);
@@ -112,8 +114,8 @@ public class EyeballMazeViewModel extends ViewModel {
         rowLiveData.setValue(game.getEyeballRow());
         colLiveData.setValue(game.getEyeballColumn());
         dirLiveData.setValue(game.getEyeballDirection());
-//        boardLiveData.setValue(game.getBoardData());
         currentGoalLiveData.setValue(game.isCurrentSquareGoal());
+        updateGoalsRemaining();
     }
 
     public int getLevelCount() {
@@ -133,5 +135,19 @@ public class EyeballMazeViewModel extends ViewModel {
 
     public int getMazeIdAt(int index) {
         return game.getMazeIdAt(index);
+    }
+
+    private void updateGoalsRemaining() {
+        Set<Point> remainingGoals = game.getRemainingGoalPoints();
+        int count = remainingGoals.size();
+
+        int row = game.getEyeballRow();
+        int col = game.getEyeballColumn();
+
+        if (remainingGoals.contains(new Point(col, row))) {
+            count -= 1;
+        }
+
+        goalsRemaining.setValue(count);
     }
 }

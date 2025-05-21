@@ -1,5 +1,6 @@
 <resources>
     <string name="app_name">Eyeball Maze</string>
+    <string name="move_blocked">Move blocked: %1$s</string>
     <string name="reset">Reset</string>
     <string name="goal">⭐</string>
     <string name="solved">Solved</string>
@@ -7,4 +8,9 @@
         <item quantity="one">%1$d goal to do</item>
         <item quantity="other">%1$d goals to do</item>
     </plurals>
+    <string name="next_level">Want to try the next level?</string>
+    <string name="select">Select</string>
+    <string name="cancel">Cancel</string>
+    <string name="no_more_levels">No more levels!</string>
+    <string name="no_more_levels_message">You’ve completed all levels available.</string>
 </resources>

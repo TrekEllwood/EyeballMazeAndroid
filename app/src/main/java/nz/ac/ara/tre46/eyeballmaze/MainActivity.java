@@ -19,7 +19,9 @@ import com.google.android.material.snackbar.Snackbar;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.appcompat.app.AlertDialog;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -85,7 +87,6 @@ public class MainActivity extends AppCompatActivity {
         resetBtn.setOnClickListener(v -> {
             viewModel.resetMaze();
             mazeView.setGoalPositions(viewModel.getGoalPoints());
-            updateGoalStatus();
         });
 
         goalsStatusTextView = new TextView(this);
@@ -212,14 +213,52 @@ public class MainActivity extends AppCompatActivity {
 
         viewModel.isCurrentGoal().observe(this, isGoal -> {
             mazeView.setCurrentSquareIsGoal(isGoal);
-            updateGoalStatus();
             mazeView.invalidate();
         });
 
         viewModel.getMoveStatus().observe(this, message -> {
             if (message != null && message != Message.OK) {
-                Snackbar.make(root, "Move blocked: " + message.name(), Snackbar.LENGTH_SHORT).show();
+                Snackbar.make(
+                        root,
+                        getString(R.string.move_blocked, message.name()),
+                        Snackbar.LENGTH_SHORT
+                ).show();
                 viewModel.clearMoveStatus();
+            }
+        });
+
+        viewModel.getGoalsRemaining().observe(this, remaining -> {
+            if (goalsStatusTextView == null) return;
+
+            if (remaining <= 0) {
+                goalsStatusTextView.setText(getString(R.string.solved));
+
+                new AlertDialog.Builder(this)
+                        .setTitle(R.string.solved)
+                        .setMessage(R.string.next_level)
+                        .setPositiveButton(R.string.select, (dialog, which) -> {
+                            int next = viewModel.getCurrentLevelIndex() + 1;
+                            if (next < viewModel.getLevelCount()) {
+                                viewModel.setLevel(next);
+                                levelSpinner.setSelection(viewModel.getCurrentLevelIndex());
+                                syncMazeViewFromViewModel();
+                            } else {
+                                new AlertDialog.Builder(this)
+                                        .setTitle(R.string.no_more_levels)
+                                        .setMessage(R.string.no_more_levels_message)
+                                        .setPositiveButton(android.R.string.ok, null)
+                                        .show();
+                            }
+                        })
+                        .setNegativeButton(R.string.reset, (dialog, which) -> {
+                            viewModel.resetMaze();
+                            mazeView.setGoalPositions(viewModel.getGoalPoints());
+                        })
+                        .show();
+            } else {
+                goalsStatusTextView.setText(
+                        getResources().getQuantityString(R.plurals.goals_remaining, remaining, remaining)
+                );
             }
         });
     }
@@ -237,7 +276,6 @@ public class MainActivity extends AppCompatActivity {
         mazeView.setShapeProvider(viewModel::getShapeAt);
         mazeView.setTypeProvider(viewModel::getTypeAt);
         updateAppTitle();
-        updateGoalStatus();
         mazeView.invalidate();
     }
 
@@ -249,32 +287,6 @@ public class MainActivity extends AppCompatActivity {
             titleTextView.setText(title); // landscape
         } else {
             setTitle(title); // portrait
-        }
-    }
-
-    private void updateGoalStatus() {
-        if (goalsStatusTextView == null) return;
-
-        Set<Point> goalPoints = viewModel.getGoalPoints();
-        int goalsRemaining = goalPoints.size();
-
-        Integer row = viewModel.getEyeballRow().getValue();
-        Integer col = viewModel.getEyeballCol().getValue();
-
-        // Subtract if eyeball is currently on a goal square
-        if (row != null && col != null && goalPoints.contains(new Point(col, row))) {
-            goalsRemaining -= 1;
-        }
-
-        if (goalsRemaining <= 0) {
-            goalsStatusTextView.setText(getString(R.string.solved));
-        } else {
-            goalsStatusTextView.setText(
-                    getResources().getQuantityString(R.plurals.goals_remaining,
-                            goalsRemaining,
-                            goalsRemaining
-                    )
-            );
         }
     }
 }
