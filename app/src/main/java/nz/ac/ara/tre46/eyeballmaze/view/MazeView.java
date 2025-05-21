@@ -8,39 +8,49 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.RectF;
+import android.graphics.Point;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 
+import androidx.annotation.NonNull;
+
+import java.util.HashSet;
+import java.util.Set;
+
 import nz.ac.ara.tre46.eyeballmaze.enums.Color;
 import nz.ac.ara.tre46.eyeballmaze.enums.Shape;
+import nz.ac.ara.tre46.eyeballmaze.enums.SquareType;
 import nz.ac.ara.tre46.eyeballmaze.enums.Direction;
-import nz.ac.ara.tre46.eyeballmaze.models.Square;
 import nz.ac.ara.tre46.eyeballmaze.R;
 
 public class MazeView extends View {
-    private Square[][] board;
     private int eyeballRow = -1;
     private int eyeballCol = -1;
     private boolean currentGoal = false;
+    private int boardRows = 0;
+    private int boardCols = 0;
 
     private final Paint linePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint fillPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-//    private final Paint eyeballPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint goalPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-//    private final Paint eyeWhitePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint goalTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     private final Path reusablePath = new Path();
     private final RectF reusableRectF = new RectF();
 
+    private final Set<String> goalKeys = new HashSet<>();
     private Bitmap eyeballBitmap = null;
     private final Matrix matrix = new Matrix();
-//    private Bitmap scaledEyeballBitmap;
-//    private int lastCellW = -1;
-//    private int lastCellH = -1;
 
     private float cellW, cellH;
     private OnCellTapListener tapListener;
+
+    private TypeProvider typeProvider;
+    private ColorProvider colorProvider;
+    private ShapeProvider shapeProvider;
+
+    private String goalLabel;
 
     public MazeView(Context context) {
         super(context);
@@ -57,22 +67,17 @@ public class MazeView extends View {
         init();
     }
 
-//    public void setEyeballBitmap(Bitmap bmp) {
-//        this.eyeballBitmap = bmp;
-//        this.scaledEyeballBitmap = null;  // Force re-scaling on next draw
-//    }
-
     private void init() {
+        goalLabel = getResources().getString(R.string.goal);
+
         linePaint.setStyle(Paint.Style.STROKE);
         linePaint.setStrokeWidth(4);
 
         fillPaint.setStyle(Paint.Style.FILL);
 
-//        eyeballPaint.setStyle(Paint.Style.FILL);
-//        eyeballPaint.setColor(android.graphics.Color.BLACK);
-
-//        eyeWhitePaint.setColor(android.graphics.Color.WHITE);
-//        eyeWhitePaint.setStyle(Paint.Style.FILL);
+        goalTextPaint.setColor(android.graphics.Color.BLACK);
+        goalTextPaint.setTextSize(32);
+        goalTextPaint.setTextAlign(Paint.Align.LEFT);
 
         goalPaint.setStyle(Paint.Style.STROKE);
         goalPaint.setStrokeWidth(8);
@@ -81,11 +86,12 @@ public class MazeView extends View {
         eyeballBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.eyeball);
     }
 
-    /** Called by your Activity when the ViewModel’s board LiveData changes */
-    public void setBoard(Square[][] board) {
-        this.board = board;
+    public void setBoardSize(int rows, int cols) {
+        this.boardRows = rows;
+        this.boardCols = cols;
         invalidate();
     }
+
 
     /** Called by your Activity when the ViewModel’s eyeball‐row/col change */
     public void setEyeballPosition(int row, int col) {
@@ -100,6 +106,14 @@ public class MazeView extends View {
         invalidate();
     }
 
+    public void setGoalPositions(Set<Point> goals) {
+        goalKeys.clear();
+        for (Point p : goals) {
+            goalKeys.add(p.y + "," + p.x); // row,col format
+        }
+        invalidate();
+    }
+
     public void setEyeballBitmap(Bitmap bmp) {
         this.eyeballBitmap = bmp;
     }
@@ -109,13 +123,14 @@ public class MazeView extends View {
     }
 
     @Override
-    protected void onDraw(Canvas canvas) {
+    protected void onDraw(@NonNull Canvas canvas) {
         super.onDraw(canvas);
 
-        if (board == null) return;
+        if (boardRows == 0 || boardCols == 0 || colorProvider == null || shapeProvider == null) return;
 
-        int rows = board.length;
-        int cols = board[0].length;
+        int rows = boardRows;
+        int cols = boardCols;
+
         float rawCellW = (float) getWidth() / cols;
         float rawCellH = (float) getHeight() / rows;
         float squareSize = Math.min(rawCellW, rawCellH);
@@ -132,15 +147,34 @@ public class MazeView extends View {
                 float right = left + cellW;
                 float bottom = top + cellH;
 
-                // background color
-                Square sq = board[r][c];
-                fillPaint.setColor(toAndroidColor(sq.getColor()));
-                canvas.drawRect(left, top, right, bottom, fillPaint);
+                if (colorProvider != null) {
+                    Color color = colorProvider.getColor(r, c);
+                    fillPaint.setColor(toAndroidColor(color));
+                    canvas.drawRect(left, top, right, bottom, fillPaint);
+                }
 
-                // shape
-                drawShape(canvas, sq.getShape(), left, top, cellW, cellH);
+                if (shapeProvider != null) {
+                    Shape shape = shapeProvider.getShape(r, c);
+                    drawShape(canvas, shape, left, top, cellW, cellH);
+                }
+
                 // cell border
                 canvas.drawRect(left, top, right, bottom, linePaint);
+
+                // If this cell is a goal, draw "Goal" text
+                String key = r + "," + c;
+                if (goalKeys.contains(key)) {
+                    goalTextPaint.setColor(android.graphics.Color.WHITE);
+                    goalTextPaint.setTextAlign(Paint.Align.CENTER);
+                    goalTextPaint.setTextSize(cellH * 0.3f); // Adjust size per cell
+
+                    Paint.FontMetrics fontMetrics = goalTextPaint.getFontMetrics() ;
+                    float textOffset = (fontMetrics.ascent + fontMetrics.descent) / 2f;
+
+                    float cx = left + cellW / 2f;
+                    float cy = top + cellH / 2f;
+                    canvas.drawText(goalLabel, cx, cy - textOffset, goalTextPaint);
+                }
             }
         }
 
@@ -158,9 +192,6 @@ public class MazeView extends View {
             float cy = offsetY + eyeballRow * cellH + cellH / 2f;
             float size = Math.min(cellW, cellH) * 0.8f;
 
-            float left = cx - size / 2f;
-            float top = cy - size / 2f;
-
             matrix.reset();
 
             // Center the image
@@ -171,7 +202,6 @@ public class MazeView extends View {
                 case UP -> 270;
                 case DOWN -> 90;
                 case LEFT -> 180;
-                case RIGHT -> 0;
                 default -> 0;
             };
             matrix.postRotate(angle);
@@ -262,11 +292,12 @@ public class MazeView extends View {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        if (board == null || tapListener == null) return false;
+//        if (board == null || tapListener == null) return false;
+        if (boardRows == 0 || boardCols == 0 || tapListener == null) return false;
         if (event.getAction() != MotionEvent.ACTION_DOWN) return false;
 
-        int rows = board.length;
-        int cols = board[0].length;
+        int rows = boardRows;
+        int cols = boardCols;
 
         // Recalculate square cell size
         float rawCellW = (float) getWidth() / cols;
@@ -301,5 +332,29 @@ public class MazeView extends View {
 
     public interface OnCellTapListener {
         void onCellTapped(int row, int col);
+    }
+
+    public interface TypeProvider {
+        SquareType getType(int row, int col);
+    }
+
+    public interface ColorProvider {
+        Color getColor(int row, int col);
+    }
+
+    public interface ShapeProvider {
+        Shape getShape(int row, int col);
+    }
+
+    public void setTypeProvider(TypeProvider provider) {
+        this.typeProvider = provider;
+    }
+
+    public void setColorProvider(ColorProvider provider) {
+        this.colorProvider = provider;
+    }
+
+    public void setShapeProvider(ShapeProvider provider) {
+        this.shapeProvider = provider;
     }
 }

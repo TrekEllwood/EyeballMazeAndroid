@@ -10,14 +10,10 @@ import nz.ac.ara.tre46.eyeballmaze.enums.Shape;
 import nz.ac.ara.tre46.eyeballmaze.interfaces.IGoal;
 import nz.ac.ara.tre46.eyeballmaze.interfaces.ILevelHolder;
 import nz.ac.ara.tre46.eyeballmaze.interfaces.IMaze;
-import nz.ac.ara.tre46.eyeballmaze.models.BlankSquare;
-import nz.ac.ara.tre46.eyeballmaze.models.PlayableSquare;
 
 public class LevelHolder implements ILevelHolder {
     private final List<IMaze> levels;
     private IMaze currentLevel;
-//	private String[] originalLevelLines; // ADDED
-	private final List<String[]> originalLevelChunks = new ArrayList<>(); // ADDED
 
     public LevelHolder() {
 	levels = new ArrayList<>();
@@ -88,15 +84,12 @@ public class LevelHolder implements ILevelHolder {
 	 */
 	@Override
 	public void loadLevelFromText(String[] lines) {
-//		this.originalLevelLines = lines.clone(); // For reset
 		levels.clear();
-		originalLevelChunks.clear();
 
 		List<String> currentMaze = new ArrayList<>();
 		for (String line : lines) {
 			if (line.trim().isEmpty() && !currentMaze.isEmpty()) {
 				addMazeFromLines(currentMaze);
-				originalLevelChunks.add(currentMaze.toArray(new String[0]));
 				currentMaze.clear();
 			} else if (!line.trim().startsWith("#")) {
 				currentMaze.add(line.trim());
@@ -104,7 +97,6 @@ public class LevelHolder implements ILevelHolder {
 		}
 		if (!currentMaze.isEmpty()) {
 			addMazeFromLines(currentMaze);
-			originalLevelChunks.add(currentMaze.toArray(new String[0]));
 		}
 
 		if (!levels.isEmpty()) {
@@ -195,81 +187,5 @@ public class LevelHolder implements ILevelHolder {
             case "r" -> Direction.RIGHT;
             default -> throw new IllegalArgumentException("Invalid dir: " + code);
         };
-	}
-
-	public void resetCurrentLevelFromText() {
-		if (currentLevel == null || originalLevelChunks.isEmpty()) return;
-
-		int index = levels.indexOf(currentLevel);
-		if (index >= 0 && index < originalLevelChunks.size()) {
-			String[] originalLines = originalLevelChunks.get(index);
-			List<String> copy = new ArrayList<>(List.of(originalLines));
-
-//			levels.set(index, null); // temp placeholder
-//			addMazeFromLines(copy);
-//			currentLevel = levels.get(index);
-			IMaze newMaze = parseMazeFromLines(copy);
-			if (newMaze != null) {
-				levels.set(index, newMaze);
-				currentLevel = newMaze;
-			}
-		}
-	}
-
-	private IMaze parseMazeFromLines(List<String> lines) {
-		if (lines.size() < 2) return null;
-
-		try {
-			String[] hdr = lines.get(0).split(",", 5);
-			int mazeId = Integer.parseInt(hdr[0]);
-			int startRow = Integer.parseInt(hdr[1]);
-			int startCol = Integer.parseInt(hdr[2]);
-			Direction dir = parseDirection(hdr[3]);
-
-			// Find goal section
-			int goalStart = -1;
-			for (int i = 1; i < lines.size(); i++) {
-				if (lines.get(i).toLowerCase().contains("goal")) {
-					goalStart = i + 1;
-					break;
-				}
-			}
-
-			int gridEnd = (goalStart == -1) ? lines.size() : goalStart - 1;
-			int H = gridEnd - 1;
-			String[] firstRow = lines.get(1).split(",");
-			int W = firstRow.length;
-
-			Square[][] boardData = new Square[H][W];
-			for (int r = 0; r < H; r++) {
-				String[] tokens = lines.get(1 + r).split(",");
-				for (int c = 0; c < W; c++) {
-					String tok = tokens[c].trim();
-					if (tok.equals("BLANK_BLANK")) {
-						boardData[r][c] = new BlankSquare();
-					} else {
-						String[] parts = tok.split("_", 2);
-						Color color = Color.valueOf(parts[0].trim().toUpperCase());
-						Shape shape = Shape.valueOf(parts[1].trim().toUpperCase());
-						boardData[r][c] = new PlayableSquare(color, shape);
-					}
-				}
-			}
-
-			List<IGoal> mazeGoals = new ArrayList<>();
-			if (goalStart != -1) {
-				for (int i = goalStart; i < lines.size(); i++) {
-					String[] g = lines.get(i).split(",");
-					int goalRow = Integer.parseInt(g[0].trim());
-					int goalCol = Integer.parseInt(g[1].trim());
-					mazeGoals.add(new Goal(goalRow, goalCol));
-				}
-			}
-
-			return new Maze(mazeId, startRow, startCol, dir, mazeGoals.size(), boardData, mazeGoals);
-		} catch (Exception e) {
-			Log.e("LevelHolder", "Failed to parse maze: " + e.getMessage());
-			return null;
-		}
 	}
 }

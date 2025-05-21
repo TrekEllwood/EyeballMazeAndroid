@@ -1,7 +1,17 @@
 package nz.ac.ara.tre46.eyeballmaze.models;
 
+import android.content.Context;
+import android.graphics.Point;
+import android.util.Log;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import nz.ac.ara.tre46.eyeballmaze.enums.Color;
@@ -18,6 +28,7 @@ import nz.ac.ara.tre46.eyeballmaze.interfaces.ISquareHolder;
 import nz.ac.ara.tre46.eyeballmaze.interfaces.IMaze;
 import nz.ac.ara.tre46.eyeballmaze.interfaces.IMoving;
 import nz.ac.ara.tre46.eyeballmaze.interfaces.IPlayer;
+import nz.ac.ara.tre46.eyeballmaze.R;
 
 public class Game implements IGame, IGoalHolder, IEyeballHolder, ILevelHolder, ISquareHolder {
     private final ILevelHolder levelHolder;
@@ -37,6 +48,28 @@ public class Game implements IGame, IGoalHolder, IEyeballHolder, ILevelHolder, I
 	goalHolder = new GoalHolder();
 	moving = new Moving(this);
 //	squareHolder = new SquareHolder(); // CHANGE
+    }
+
+    // ADDED #1: to make Game self contained
+    public Game(Context context) {
+        this(); // call default constructor to set up dependencies
+
+        String[] levelLines = loadLevelFromRaw(context, R.raw.levels);
+        loadLevelFromText(levelLines);
+    }
+    // ADDED #2: it now owns responsibility for loading and initialising levels
+    private String[] loadLevelFromRaw(Context ctx, int resId) {
+        List<String> lines = new ArrayList<>();
+        try (InputStream is = ctx.getResources().openRawResource(resId);
+             BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                lines.add(line.trim());
+            }
+        } catch (IOException e) {
+            Log.e("Game", "Failed to load level data", e);
+        }
+        return lines.toArray(new String[0]);
     }
 
     @Override
@@ -112,7 +145,7 @@ public class Game implements IGame, IGoalHolder, IEyeballHolder, ILevelHolder, I
         if (levelHolder.getLevelCount() == 0) {
             throw new IllegalStateException("No levels were loaded. Check level file format.");
         }
-        setLevel(levelHolder.getLevelCount() - 1);
+        setLevel(0);
     }
 
     @Override
@@ -311,8 +344,25 @@ public class Game implements IGame, IGoalHolder, IEyeballHolder, ILevelHolder, I
         if (levelHolder instanceof LevelHolder holder) {
             IMaze current = holder.getCurrentMaze();
             int index = holder.getMazeIndex(current);
-            holder.resetCurrentLevelFromText();
+//            holder.resetCurrentLevelFromText();
             setLevel(index);
         }
+    }
+
+    @Override
+    public Set<Point> getRemainingGoalPoints() {
+        Set<Point> set = new HashSet<>();
+        for (IGoal goal : goalHolder.getGoals()) {
+            set.add(new Point(goal.getColumn(), goal.getRow()));
+        }
+        return set;
+    }
+
+    public int getBoardHeight() {
+        return levelHolder.getLevelHeight();
+    }
+
+    public int getBoardWidth() {
+        return levelHolder.getLevelWidth();
     }
 }

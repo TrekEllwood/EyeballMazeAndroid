@@ -1,7 +1,14 @@
 package nz.ac.ara.tre46.eyeballmaze.interfaces;
 
+import android.graphics.Point;
+
+import java.util.Set;
+
+import nz.ac.ara.tre46.eyeballmaze.enums.Color;
 import nz.ac.ara.tre46.eyeballmaze.enums.Direction;
 import nz.ac.ara.tre46.eyeballmaze.enums.Message;
+import nz.ac.ara.tre46.eyeballmaze.enums.Shape;
+import nz.ac.ara.tre46.eyeballmaze.enums.SquareType;
 import nz.ac.ara.tre46.eyeballmaze.models.Square;
 
 public interface IGame {
@@ -45,4 +52,22 @@ public interface IGame {
     void resetBoard(int width, int height);
 
     void resetCurrentLevel();
+
+    Set<Point> getRemainingGoalPoints();
+
+    public void setLevel(int levelNumber);
+
+    public int getLevelCount();
+
+    void loadLevelFromText(String[] lines);
+
+    public Color getColorAt(int row, int column);
+
+    public Shape getShapeAt(int row, int column);
+
+    public SquareType getTypeAt(int row, int column);
+
+    public int getBoardHeight();
+
+    public int getBoardWidth();
 }

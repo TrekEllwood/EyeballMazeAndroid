@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">EyeballMaze</string>
     <string name="reset">Reset</string>
+    <string name="goal">⭐</string>
 </resources>
