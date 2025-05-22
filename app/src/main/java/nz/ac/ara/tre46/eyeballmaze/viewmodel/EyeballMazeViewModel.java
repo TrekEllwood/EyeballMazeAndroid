@@ -133,7 +133,10 @@ public class EyeballMazeViewModel extends ViewModel {
         syncGameState();
     }
 
-    // === Goal operations ===
+    public boolean canMoveTo(int row, int col) {
+        return game.canMoveTo(row, col);
+    }
+
     public boolean hasGoalAt(int row, int col) {
         return game.hasGoalAt(row, col);
     }

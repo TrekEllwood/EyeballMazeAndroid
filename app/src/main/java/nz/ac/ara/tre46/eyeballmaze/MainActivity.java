@@ -5,14 +5,17 @@ import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
+
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.LinearLayout;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.widget.Spinner;
 import android.widget.TextView;
+
+import android.graphics.Point;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.widget.Toast;
 
 import com.google.android.material.snackbar.Snackbar;
@@ -20,11 +23,13 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AlertDialog;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.appcompat.app.AlertDialog;
 
+import java.util.Deque;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -33,6 +38,7 @@ import nz.ac.ara.tre46.eyeballmaze.enums.Message;
 import nz.ac.ara.tre46.eyeballmaze.viewmodel.EyeballMazeViewModel;
 import nz.ac.ara.tre46.eyeballmaze.viewmodel.EyeballMazeViewModelFactory;
 import nz.ac.ara.tre46.eyeballmaze.view.MazeView;
+import nz.ac.ara.tre46.eyeballmaze.utils.SerializablePoint;
 
 public class MainActivity extends AppCompatActivity {
     private EyeballMazeViewModel viewModel;
@@ -44,11 +50,25 @@ public class MainActivity extends AppCompatActivity {
     private MediaPlayer winSfx;
     private MediaPlayer badMoveSfx;
     private boolean isMuted = false;
+    private final Deque<Point> movePlaybackTrail = new ArrayDeque<>();
 
-
+    @SuppressWarnings("unchecked")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        if (savedInstanceState != null) {
+            ArrayList<SerializablePoint> trailData =
+                    (ArrayList<SerializablePoint>) savedInstanceState.getSerializable("move_trail");
+
+            if (trailData != null) {
+                movePlaybackTrail.clear();
+                for (SerializablePoint sp : trailData) {
+                    movePlaybackTrail.add(new Point(sp.x, sp.y));
+                }
+            }
+        }
+
         setContentView(R.layout.activity_main);
 
         moveSfx = MediaPlayer.create(this, R.raw.move);
@@ -86,7 +106,24 @@ public class MainActivity extends AppCompatActivity {
         mazeView = new MazeView(this);
         Bitmap eyeballBmp = BitmapFactory.decodeResource(getResources(), R.drawable.eyeball);
         mazeView.setEyeballBitmap(eyeballBmp);
-        mazeView.setOnCellTapListener((row, col) -> viewModel.clickToMoveToward(row, col));
+
+        mazeView.setOnCellTapListener((row, col) -> {
+            if (viewModel.canMoveTo(row, col)) {
+//                viewModel.clickToMoveToward(row, col);
+                movePlaybackTrail.add(new Point(col, row)); // Save successful move
+            } else {
+                // Show sound + visual feedback for invalid move
+                if (!isMuted && badMoveSfx != null) {
+                    badMoveSfx.seekTo(0);
+                    badMoveSfx.start();
+                }
+
+                mazeView.setFailedMoveAt(row, col);
+//                mazeView.postDelayed(() -> mazeView.clearFailedMove(), 500);
+            }
+
+            viewModel.clickToMoveToward(row, col); // Handles messages
+        });
 
         LinearLayout.LayoutParams mazeParams = new LinearLayout.LayoutParams(
                 isLandscape ? 0 : LayoutParams.MATCH_PARENT,
@@ -124,6 +161,9 @@ public class MainActivity extends AppCompatActivity {
         resetBtn.setOnClickListener(v -> {
             viewModel.resetMaze();
             mazeView.setGoalPositions(viewModel.getGoalPoints());
+            movePlaybackTrail.clear();
+            syncMazeViewFromViewModel();
+            recordStartPosition();
         });
 
         Button undoBtn = new Button(this);
@@ -131,18 +171,21 @@ public class MainActivity extends AppCompatActivity {
         undoBtn.setOnClickListener(v -> {
             viewModel.undo();
             syncMazeViewFromViewModel();
+
+            if (!movePlaybackTrail.isEmpty()) {
+                movePlaybackTrail.removeLast();
+            }
         });
         viewModel.canUndoLiveData().observe(this, canUndo -> undoBtn.setEnabled(Boolean.TRUE.equals(canUndo)));
 
         Button muteBtn = new Button(this);
         muteBtn.setText(getString(R.string.mute));
-        int muteWidthDp = 48;
+        int muteWidthDp = dpToPx(15);
         float density = getResources().getDisplayMetrics().density;
         int muteWidthPx = (int) (muteWidthDp * density + 0.5f);
 
         LinearLayout.LayoutParams muteParams = new LinearLayout.LayoutParams(muteWidthPx, LayoutParams.WRAP_CONTENT);
         muteBtn.setLayoutParams(muteParams);
-
         muteBtn.setOnClickListener(v -> {
             isMuted = !isMuted;
             muteBtn.setText(getString(isMuted ? R.string.unmute : R.string.mute));
@@ -152,6 +195,10 @@ public class MainActivity extends AppCompatActivity {
             if (winSfx != null) winSfx.setVolume(volume, volume);
             if (badMoveSfx != null) badMoveSfx.setVolume(volume, volume);
         });
+
+        Button replayBtn = new Button(this);
+        replayBtn.setText(getString(R.string.replay));
+        replayBtn.setOnClickListener(v -> playBackMoves());
 
         goalsStatusTextView = new TextView(this);
         goalsStatusTextView.setTextSize(16);
@@ -193,6 +240,7 @@ public class MainActivity extends AppCompatActivity {
             centerControls.addView(moveCounterTextView);
             centerControls.addView(resetBtn);
             centerControls.addView(undoBtn);
+            centerControls.addView(replayBtn);
             centerControls.addView(muteBtn);
             centerControls.addView(spinnerRow);
 
@@ -218,6 +266,7 @@ public class MainActivity extends AppCompatActivity {
 
             buttonRow.addView(resetBtn);
             buttonRow.addView(undoBtn);
+            buttonRow.addView(replayBtn);
             buttonRow.addView(muteBtn);
 
             verticalLayout.addView(buttonRow);
@@ -237,6 +286,7 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(root);
         syncMazeViewFromViewModel();
+        recordStartPosition();
 
         // Spinner setup
         List<String> levelLabels = new ArrayList<>();
@@ -260,6 +310,8 @@ public class MainActivity extends AppCompatActivity {
                     levelSpinner.setEnabled(false);
                     viewModel.setLevel(position);
                     syncMazeViewFromViewModel();
+                    movePlaybackTrail.clear();
+                    recordStartPosition();
                     levelSpinner.setEnabled(true);
                 }
             }
@@ -280,8 +332,9 @@ public class MainActivity extends AppCompatActivity {
             if (col != null) {
                 mazeView.setEyeballPosition(row, col);
                 mazeView.setGoalPositions(viewModel.getGoalPoints());
-//                if (moveSfx != null) {
-//                    moveSfx.start();
+
+//                if (movePlaybackTrail.isEmpty()) {
+//                    movePlaybackTrail.add(new Point(col, row));
 //                }
             }
         });
@@ -302,19 +355,14 @@ public class MainActivity extends AppCompatActivity {
         viewModel.getMoveHappened().observe(this, happened -> {
             if (Boolean.TRUE.equals(happened)) {
                 playMoveSound();
-                viewModel.clearMoveHappened();  // Optional helper method
+                viewModel.clearMoveHappened();
             }
         });
 
         viewModel.getMoveStatus().observe(this, message -> {
             if (message != null && message != Message.OK) {
-                if (!isMuted && badMoveSfx != null) {
-                    badMoveSfx.seekTo(0);
-                    badMoveSfx.start();
-                }
-
                 Snackbar.make(
-                        root,
+                        findViewById(android.R.id.content),
                         getString(R.string.move_blocked, message.name()),
                         Snackbar.LENGTH_SHORT
                 ).show();
@@ -341,6 +389,8 @@ public class MainActivity extends AppCompatActivity {
                                 viewModel.setLevel(next);
                                 levelSpinner.setSelection(viewModel.getCurrentLevelIndex());
                                 syncMazeViewFromViewModel();
+                                movePlaybackTrail.clear();
+                                recordStartPosition();
                             } else {
                                 new AlertDialog.Builder(this)
                                         .setTitle(R.string.no_more_levels)
@@ -369,6 +419,14 @@ public class MainActivity extends AppCompatActivity {
     protected void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putInt("selected_level", viewModel.getCurrentLevelIndex());
+
+        // Convert Point list to SerializablePoint list
+        ArrayList<SerializablePoint> serializableTrail = new ArrayList<>();
+        for (Point p : movePlaybackTrail) {
+            serializableTrail.add(new SerializablePoint(p.x, p.y));
+        }
+
+        outState.putSerializable("move_trail", serializableTrail);
     }
 
     @Override
@@ -413,6 +471,44 @@ public class MainActivity extends AppCompatActivity {
         if (!isMuted && moveSfx != null) {
             moveSfx.seekTo(0);
             moveSfx.start();
+        }
+    }
+
+    @SuppressWarnings("SameParameterValue")
+    private int dpToPx(int dp) {
+        float density = getResources().getDisplayMetrics().density;
+        return Math.round(dp * density);
+    }
+
+    private void playBackMoves() {
+        if (movePlaybackTrail.isEmpty()) return;
+
+        new Thread(() -> {
+            for (Point p : movePlaybackTrail) {
+                int row = p.y;
+                int col = p.x;
+
+                runOnUiThread(() -> {
+                    mazeView.setEyeballPosition(row, col);
+                    mazeView.invalidate();
+                });
+
+                try {
+                    Thread.sleep(300);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }).start();
+    }
+
+    private void recordStartPosition() {
+        Integer row = viewModel.getEyeballRow().getValue();
+        Integer col = viewModel.getEyeballCol().getValue();
+
+        if (row != null && col != null) {
+            movePlaybackTrail.clear();
+            movePlaybackTrail.add(new Point(col, row));
         }
     }
 }

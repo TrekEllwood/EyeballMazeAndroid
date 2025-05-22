@@ -31,11 +31,17 @@ public class MazeView extends View {
     private boolean currentGoal = false;
     private int boardRows = 0;
     private int boardCols = 0;
+    private int failedRow = -1;
+    private int failedCol = -1;
 
     private final Paint linePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint fillPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint goalPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint goalTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint failedPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+    private final android.os.Handler handler = new android.os.Handler();
+    private Runnable clearFailedRunnable;
 
     private final Path reusablePath = new Path();
     private final RectF reusableRectF = new RectF();
@@ -83,6 +89,10 @@ public class MazeView extends View {
         goalPaint.setStyle(Paint.Style.STROKE);
         goalPaint.setStrokeWidth(8);
         goalPaint.setColor(android.graphics.Color.YELLOW);
+
+        failedPaint.setColor(android.graphics.Color.RED);
+        failedPaint.setAlpha(150); // semi-transparent
+        failedPaint.setStyle(Paint.Style.FILL);
 
         eyeballBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.eyeball);
     }
@@ -218,6 +228,15 @@ public class MazeView extends View {
             matrix.postTranslate(cx, cy);
 
             canvas.drawBitmap(eyeballBitmap, matrix, null);
+        }
+
+        // Draw failed move marker
+        if (failedRow >= 0 && failedCol >= 0) {
+            float cx = offsetX + failedCol * cellW + cellW / 2f;
+            float cy = offsetY + failedRow * cellH + cellH / 2f;
+            float radius = Math.min(cellW, cellH) * 0.4f;
+
+            canvas.drawCircle(cx, cy, radius, failedPaint);
         }
     }
 
@@ -367,5 +386,24 @@ public class MazeView extends View {
 
     public void setShapeProvider(ShapeProvider provider) {
         this.shapeProvider = provider;
+    }
+
+    public void setFailedMoveAt(int row, int col) {
+        this.failedRow = row;
+        this.failedCol = col;
+        invalidate();
+
+        if (clearFailedRunnable != null) {
+            handler.removeCallbacks(clearFailedRunnable);
+        }
+
+        clearFailedRunnable = this::clearFailedMove;
+        handler.postDelayed(clearFailedRunnable, 500);
+    }
+
+    public void clearFailedMove() {
+        this.failedRow = -1;
+        this.failedCol = -1;
+        invalidate();
     }
 }

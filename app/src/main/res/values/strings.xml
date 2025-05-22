@@ -2,7 +2,7 @@
     <string name="app_name">Eyeball Maze</string>
     <string name="move_blocked">Move blocked: %1$s</string>
     <string name="reset">Reset</string>
-    <string name="goal">⭐</string>
+    <string name="goal">🏳️</string>
     <string name="solved">Solved</string>
     <plurals name="goals_remaining">
         <item quantity="one">%1$d goal to do</item>
@@ -19,4 +19,5 @@
     <string name="moves_format">Moves: %1$d</string>
     <string name="mute">🔊</string>
     <string name="unmute">🔇</string>
+    <string name="replay">Replay</string>
 </resources>
