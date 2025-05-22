@@ -4,6 +4,7 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
+import java.util.Collection;
 import java.util.Set;
 import java.util.Deque;
 import java.util.ArrayDeque;
@@ -30,6 +31,7 @@ public class EyeballMazeViewModel extends ViewModel {
     private final MutableLiveData<Boolean> canUndoLiveData = new MutableLiveData<>(false);
     private final MutableLiveData<Integer> moveCount = new MutableLiveData<>(0);
     private final MutableLiveData<Boolean> moveHappened = new MutableLiveData<>(false);
+    private final MutableLiveData<Boolean> canReplayLiveData = new MutableLiveData<>(false);
 
     private final Deque<Object> undoStack = new ArrayDeque<>();
     private static final int MAX_UNDO = 10;
@@ -40,9 +42,9 @@ public class EyeballMazeViewModel extends ViewModel {
         syncGameState();
     }
 
-    public boolean canUndo() {
-        return !undoStack.isEmpty();
-    }
+//    public boolean canUndo() {
+//        return !undoStack.isEmpty();
+//    }
 
 //    public IGame getGame() {
 //        return game;
@@ -83,6 +85,10 @@ public class EyeballMazeViewModel extends ViewModel {
 
     public LiveData<Boolean> getMoveHappened() {
         return moveHappened;
+    }
+
+    public LiveData<Boolean> getCanReplayLiveData() {
+        return canReplayLiveData;
     }
 
     public void clearMoveStatus() {
@@ -227,5 +233,9 @@ public class EyeballMazeViewModel extends ViewModel {
 
     public void clearMoveHappened() {
         moveHappened.setValue(false);
+    }
+
+    public void updateCanReplay(Collection<Point> trail) {
+        canReplayLiveData.setValue(trail.size() > 1);
     }
 }

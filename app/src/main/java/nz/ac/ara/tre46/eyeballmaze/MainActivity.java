@@ -9,6 +9,7 @@ import android.view.ViewGroup.LayoutParams;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -19,11 +20,9 @@ import android.graphics.BitmapFactory;
 import android.widget.Toast;
 
 import com.google.android.material.snackbar.Snackbar;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.app.AlertDialog;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.lifecycle.ViewModelProvider;
@@ -111,6 +110,7 @@ public class MainActivity extends AppCompatActivity {
             if (viewModel.canMoveTo(row, col)) {
 //                viewModel.clickToMoveToward(row, col);
                 movePlaybackTrail.add(new Point(col, row)); // Save successful move
+                viewModel.updateCanReplay(movePlaybackTrail);
             } else {
                 // Show sound + visual feedback for invalid move
                 if (!isMuted && badMoveSfx != null) {
@@ -119,7 +119,6 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 mazeView.setFailedMoveAt(row, col);
-//                mazeView.postDelayed(() -> mazeView.clearFailedMove(), 500);
             }
 
             viewModel.clickToMoveToward(row, col); // Handles messages
@@ -162,6 +161,7 @@ public class MainActivity extends AppCompatActivity {
             viewModel.resetMaze();
             mazeView.setGoalPositions(viewModel.getGoalPoints());
             movePlaybackTrail.clear();
+            viewModel.updateCanReplay(movePlaybackTrail);
             syncMazeViewFromViewModel();
             recordStartPosition();
         });
@@ -174,6 +174,7 @@ public class MainActivity extends AppCompatActivity {
 
             if (!movePlaybackTrail.isEmpty()) {
                 movePlaybackTrail.removeLast();
+                viewModel.updateCanReplay(movePlaybackTrail);
             }
         });
         viewModel.canUndoLiveData().observe(this, canUndo -> undoBtn.setEnabled(Boolean.TRUE.equals(canUndo)));
@@ -199,6 +200,9 @@ public class MainActivity extends AppCompatActivity {
         Button replayBtn = new Button(this);
         replayBtn.setText(getString(R.string.replay));
         replayBtn.setOnClickListener(v -> playBackMoves());
+        viewModel.getCanReplayLiveData().observe(this, canReplay ->
+                replayBtn.setEnabled(Boolean.TRUE.equals(canReplay)));
+
 
         goalsStatusTextView = new TextView(this);
         goalsStatusTextView.setTextSize(16);
@@ -321,7 +325,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // Set up observers (unchanged from before)
+        // Observers
         mazeView.setColorProvider(viewModel::getColorAt);
         mazeView.setShapeProvider(viewModel::getShapeAt);
         mazeView.setTypeProvider(viewModel::getTypeAt);
@@ -332,10 +336,6 @@ public class MainActivity extends AppCompatActivity {
             if (col != null) {
                 mazeView.setEyeballPosition(row, col);
                 mazeView.setGoalPositions(viewModel.getGoalPoints());
-
-//                if (movePlaybackTrail.isEmpty()) {
-//                    movePlaybackTrail.add(new Point(col, row));
-//                }
             }
         });
 
@@ -361,11 +361,19 @@ public class MainActivity extends AppCompatActivity {
 
         viewModel.getMoveStatus().observe(this, message -> {
             if (message != null && message != Message.OK) {
-                Snackbar.make(
+                Snackbar snackbar = Snackbar.make(
                         findViewById(android.R.id.content),
                         getString(R.string.move_blocked, message.name()),
                         Snackbar.LENGTH_SHORT
-                ).show();
+                );
+                // Move position
+                View snackbarView = snackbar.getView();
+                FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) snackbarView.getLayoutParams();
+                params.gravity = Gravity.CENTER;
+                params.width = FrameLayout.LayoutParams.WRAP_CONTENT;
+                snackbarView.setLayoutParams(params);
+                snackbar.show();
+
                 viewModel.clearMoveStatus();
             }
         });
@@ -380,34 +388,32 @@ public class MainActivity extends AppCompatActivity {
                     winSfx.start();
                 }
 
-                new MaterialAlertDialogBuilder(this)
-                        .setTitle(R.string.solved)
-                        .setMessage(R.string.next_level)
-                        .setPositiveButton(R.string.select, (dialog, which) -> {
-                            int next = viewModel.getCurrentLevelIndex() + 1;
-                            if (next < viewModel.getLevelCount()) {
-                                viewModel.setLevel(next);
-                                levelSpinner.setSelection(viewModel.getCurrentLevelIndex());
-                                syncMazeViewFromViewModel();
-                                movePlaybackTrail.clear();
-                                recordStartPosition();
-                            } else {
-                                new AlertDialog.Builder(this)
-                                        .setTitle(R.string.no_more_levels)
-                                        .setMessage(R.string.no_more_levels_message)
-                                        .setPositiveButton(android.R.string.ok, null)
-                                        .show();
-                            }
-                        })
-                        .setNegativeButton(R.string.reset, (dialog, which) -> {
-                            viewModel.resetMaze();
-                            mazeView.setGoalPositions(viewModel.getGoalPoints());
-                        })
-                        .show();
+                Toast toast = Toast.makeText(MainActivity.this, getString(R.string.solved), Toast.LENGTH_SHORT);
+                toast.show();
+
+                Snackbar snackbar = Snackbar.make(
+                        findViewById(android.R.id.content),
+                        getString(R.string.level_complete),
+                        Snackbar.LENGTH_LONG
+                );
+
+                snackbar.setAction(getString(R.string.next), v -> {
+                    int next = viewModel.getCurrentLevelIndex() + 1;
+                    if (next < viewModel.getLevelCount()) {
+                        viewModel.setLevel(next);
+                        levelSpinner.setSelection(viewModel.getCurrentLevelIndex());
+                        syncMazeViewFromViewModel();
+                        movePlaybackTrail.clear();
+                        recordStartPosition();
+                    } else {
+                        Toast endToast = Toast.makeText(MainActivity.this, getString(R.string.no_more_levels), Toast.LENGTH_LONG);
+                        endToast.show();
+                    }
+                });
+
+                snackbar.setDuration(Snackbar.LENGTH_LONG);
+                snackbar.show();
             } else {
-//                goalsStatusTextView.setText(
-//                        getResources().getQuantityString(R.plurals.goals_remaining, remaining, remaining)
-//                );
                 String star = getString(R.string.goal);
                 String goalText = getString(R.string.goals_remaining_star, star, remaining);
                 goalsStatusTextView.setText(goalText);
@@ -509,6 +515,7 @@ public class MainActivity extends AppCompatActivity {
         if (row != null && col != null) {
             movePlaybackTrail.clear();
             movePlaybackTrail.add(new Point(col, row));
+            viewModel.updateCanReplay(movePlaybackTrail);
         }
     }
 }
