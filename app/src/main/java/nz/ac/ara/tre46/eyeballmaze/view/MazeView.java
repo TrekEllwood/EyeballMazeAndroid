@@ -14,6 +14,7 @@ import android.view.MotionEvent;
 import android.view.View;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -93,14 +94,18 @@ public class MazeView extends View {
     }
 
 
-    /** Called by your Activity when the ViewModel’s eyeball‐row/col change */
+    /**
+     * Called by your Activity when the ViewModel’s eyeball‐row/col change
+     */
     public void setEyeballPosition(int row, int col) {
         this.eyeballRow = row;
         this.eyeballCol = col;
         invalidate();
     }
 
-    /** Called by your Activity when the ViewModel’s goal‐flag changes */
+    /**
+     * Called by your Activity when the ViewModel’s goal‐flag changes
+     */
     public void setCurrentSquareIsGoal(boolean isGoal) {
         this.currentGoal = isGoal;
         invalidate();
@@ -126,7 +131,8 @@ public class MazeView extends View {
     protected void onDraw(@NonNull Canvas canvas) {
         super.onDraw(canvas);
 
-        if (boardRows == 0 || boardCols == 0 || colorProvider == null || shapeProvider == null) return;
+        if (boardRows == 0 || boardCols == 0 || colorProvider == null || shapeProvider == null)
+            return;
 
         int rows = boardRows;
         int cols = boardCols;
@@ -168,7 +174,7 @@ public class MazeView extends View {
                     goalTextPaint.setTextAlign(Paint.Align.CENTER);
                     goalTextPaint.setTextSize(cellH * 0.3f); // Adjust size per cell
 
-                    Paint.FontMetrics fontMetrics = goalTextPaint.getFontMetrics() ;
+                    Paint.FontMetrics fontMetrics = goalTextPaint.getFontMetrics();
                     float textOffset = (fontMetrics.ascent + fontMetrics.descent) / 2f;
 
                     float cx = left + cellW / 2f;
@@ -217,12 +223,12 @@ public class MazeView extends View {
 
     private int toAndroidColor(Color c) {
         return switch (c) {
-            case RED    -> android.graphics.Color.RED;
-            case GREEN  -> android.graphics.Color.GREEN;
-            case BLUE   -> android.graphics.Color.BLUE;
-            case YELLOW -> android.graphics.Color.YELLOW;
-            case PURPLE -> android.graphics.Color.MAGENTA;
-            default     -> android.graphics.Color.WHITE;
+            case RED -> ContextCompat.getColor(getContext(), R.color.soft_red);
+            case GREEN -> ContextCompat.getColor(getContext(), R.color.soft_green);
+            case BLUE -> ContextCompat.getColor(getContext(), R.color.soft_blue);
+            case YELLOW -> ContextCompat.getColor(getContext(), R.color.soft_yellow);
+            case PURPLE -> ContextCompat.getColor(getContext(), R.color.soft_purple);
+            default -> android.graphics.Color.WHITE;
         };
     }
 
@@ -236,7 +242,7 @@ public class MazeView extends View {
     private void drawShape(Canvas canvas, Shape shape,
                            float left, float top,
                            float w, float h) {
-        float cx = left + w/2, cy = top + h/2;
+        float cx = left + w / 2, cy = top + h / 2;
         float size = Math.min(w, h) * 0.4f;
 
         reusablePath.reset();
@@ -251,8 +257,8 @@ public class MazeView extends View {
                 canvas.drawPath(reusablePath, linePaint);
             }
             case CROSS -> {
-                canvas.drawLine(cx-size, cy-size, cx+size, cy+size, linePaint);
-                canvas.drawLine(cx-size, cy+size, cx+size, cy-size, linePaint);
+                canvas.drawLine(cx - size, cy, cx + size, cy, linePaint);
+                canvas.drawLine(cx, cy - size, cx, cy + size, linePaint);
             }
             case STAR -> {
                 for (int i = 0; i < 5; i++) {
@@ -270,12 +276,17 @@ public class MazeView extends View {
                 canvas.drawPath(reusablePath, linePaint);
             }
             case FLOWER -> {
+                float petalRadius = size / 3f;
+                float petalDistance = size / 2f;
+
                 for (int i = 0; i < 6; i++) {
-                    double a = Math.toRadians(i * 60);
-                    float x = cx + size * (float)Math.cos(a);
-                    float y = cy + size * (float)Math.sin(a);
-                    canvas.drawCircle(x, y, size/3, linePaint);
+                    double angle = Math.toRadians(i * 60);
+                    float x = cx + petalDistance * (float) Math.cos(angle);
+                    float y = cy + petalDistance * (float) Math.sin(angle);
+                    canvas.drawCircle(x, y, petalRadius, linePaint);
                 }
+
+                canvas.drawCircle(cx, cy, size / 5f, linePaint);
             }
             case LIGHTNING -> {
                 reusablePath.moveTo(cx - size / 2, cy - size);

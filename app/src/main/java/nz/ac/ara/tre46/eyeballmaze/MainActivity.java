@@ -16,6 +16,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.material.snackbar.Snackbar;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -41,6 +42,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView moveCounterTextView;
     private MediaPlayer moveSfx;
     private MediaPlayer winSfx;
+    private MediaPlayer badMoveSfx;
     private boolean isMuted = false;
 
 
@@ -51,6 +53,7 @@ public class MainActivity extends AppCompatActivity {
 
         moveSfx = MediaPlayer.create(this, R.raw.move);
         winSfx = MediaPlayer.create(this, R.raw.win);
+        badMoveSfx = MediaPlayer.create(this, R.raw.bad);
 
         viewModel = new ViewModelProvider(
                 this,
@@ -147,6 +150,7 @@ public class MainActivity extends AppCompatActivity {
             float volume = isMuted ? 0f : 1f;
             if (moveSfx != null) moveSfx.setVolume(volume, volume);
             if (winSfx != null) winSfx.setVolume(volume, volume);
+            if (badMoveSfx != null) badMoveSfx.setVolume(volume, volume);
         });
 
         goalsStatusTextView = new TextView(this);
@@ -304,6 +308,11 @@ public class MainActivity extends AppCompatActivity {
 
         viewModel.getMoveStatus().observe(this, message -> {
             if (message != null && message != Message.OK) {
+                if (!isMuted && badMoveSfx != null) {
+                    badMoveSfx.seekTo(0);
+                    badMoveSfx.start();
+                }
+
                 Snackbar.make(
                         root,
                         getString(R.string.move_blocked, message.name()),
@@ -323,7 +332,7 @@ public class MainActivity extends AppCompatActivity {
                     winSfx.start();
                 }
 
-                new AlertDialog.Builder(this)
+                new MaterialAlertDialogBuilder(this)
                         .setTitle(R.string.solved)
                         .setMessage(R.string.next_level)
                         .setPositiveButton(R.string.select, (dialog, which) -> {
@@ -372,6 +381,10 @@ public class MainActivity extends AppCompatActivity {
         if (winSfx != null) {
             winSfx.release();
             winSfx = null;
+        }
+        if (badMoveSfx != null) {
+            badMoveSfx.release();
+            badMoveSfx = null;
         }
     }
 
