@@ -20,4 +20,8 @@
     <string name="mute">🔊</string>
     <string name="unmute">🔇</string>
     <string name="replay">Replay</string>
+    <string name="pause">Pause</string>
+    <string name="resume">Resume</string>
+    <string name="time_format">Time: %1$s</string>
+    <string name="solved_time_format">Level solved in %1$s</string>
 </resources>

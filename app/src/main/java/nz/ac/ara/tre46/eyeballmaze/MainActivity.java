@@ -2,6 +2,7 @@ package nz.ac.ara.tre46.eyeballmaze;
 
 import android.media.MediaPlayer;
 import android.os.Bundle;
+import android.os.Handler;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
@@ -31,6 +32,7 @@ import java.util.Deque;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import nz.ac.ara.tre46.eyeballmaze.enums.Message;
@@ -45,11 +47,29 @@ public class MainActivity extends AppCompatActivity {
     private TextView titleTextView;
     private TextView goalsStatusTextView;
     private TextView moveCounterTextView;
+    private TextView timerTextView;
     private MediaPlayer moveSfx;
     private MediaPlayer winSfx;
     private MediaPlayer badMoveSfx;
+    private Button pauseBtn;
     private boolean isMuted = false;
+    private long startTime = 0L;
+    private long pausedTime = 0L;
+    private boolean isPaused = false;
+    private boolean hasTimerStarted = false;
+    private boolean isSolved = false;
     private final Deque<Point> movePlaybackTrail = new ArrayDeque<>();
+    private final Handler timerHandler = new Handler();
+    private final Runnable timerRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (!isPaused) {
+                long elapsed = System.currentTimeMillis() - startTime;
+                updateTimerDisplay(elapsed);
+                timerHandler.postDelayed(this, 1000);
+            }
+        }
+    };
 
     @SuppressWarnings("unchecked")
     @Override
@@ -66,9 +86,25 @@ public class MainActivity extends AppCompatActivity {
                     movePlaybackTrail.add(new Point(sp.x, sp.y));
                 }
             }
+
+            startTime = savedInstanceState.getLong("start_time", 0L);
+            hasTimerStarted = savedInstanceState.getBoolean("has_timer_started", false);
+            isPaused = savedInstanceState.getBoolean("is_paused", false);
+            pausedTime = savedInstanceState.getLong("paused_time", 0L);
+            isSolved = savedInstanceState.getBoolean("is_solved", false);
+
+
+//            // Restart timer only if it was running before
+//            if (hasTimerStarted && !isPaused) {
+//                timerHandler.post(timerRunnable);
+//            } else if (hasTimerStarted) {
+//                // If paused, show the last time without restarting the timer
+//                long elapsed = pausedTime - startTime;
+//                updateTimerDisplay(elapsed);
+//            }
         }
 
-        setContentView(R.layout.activity_main);
+//        setContentView(R.layout.activity_main); // Only need if using activity_main.xml
 
         moveSfx = MediaPlayer.create(this, R.raw.move);
         winSfx = MediaPlayer.create(this, R.raw.win);
@@ -108,9 +144,15 @@ public class MainActivity extends AppCompatActivity {
 
         mazeView.setOnCellTapListener((row, col) -> {
             if (viewModel.canMoveTo(row, col)) {
-//                viewModel.clickToMoveToward(row, col);
                 movePlaybackTrail.add(new Point(col, row)); // Save successful move
                 viewModel.updateCanReplay(movePlaybackTrail);
+
+                if (!hasTimerStarted) {
+                    startTime = System.currentTimeMillis();
+                    timerHandler.post(timerRunnable);
+                    hasTimerStarted = true;
+                    isPaused = false;
+                }
             } else {
                 // Show sound + visual feedback for invalid move
                 if (!isMuted && badMoveSfx != null) {
@@ -162,6 +204,8 @@ public class MainActivity extends AppCompatActivity {
             mazeView.setGoalPositions(viewModel.getGoalPoints());
             movePlaybackTrail.clear();
             viewModel.updateCanReplay(movePlaybackTrail);
+            pauseBtn.setEnabled(false);
+            isSolved = false;
             syncMazeViewFromViewModel();
             recordStartPosition();
         });
@@ -203,6 +247,31 @@ public class MainActivity extends AppCompatActivity {
         viewModel.getCanReplayLiveData().observe(this, canReplay ->
                 replayBtn.setEnabled(Boolean.TRUE.equals(canReplay)));
 
+        pauseBtn = new Button(this);
+        pauseBtn.setEnabled(false);
+        pauseBtn.setText(getString(R.string.pause));
+        pauseBtn.setOnClickListener(v -> {
+            if (isPaused) {
+                // Resume
+                long pausedDuration = System.currentTimeMillis() - pausedTime;
+                startTime += pausedDuration;
+                isPaused = false;
+                pauseBtn.setText(getString(R.string.pause));
+                mazeView.setVisibility(View.VISIBLE);
+                timerHandler.post(timerRunnable);
+            } else {
+                // Pause
+                pausedTime = System.currentTimeMillis();
+                isPaused = true;
+                pauseBtn.setText(getString(R.string.resume));
+                mazeView.setVisibility(View.INVISIBLE);
+                timerHandler.removeCallbacks(timerRunnable);
+            }
+        });
+
+        timerTextView = new TextView(this);
+        timerTextView.setTextSize(16);
+        timerTextView.setGravity(Gravity.CENTER_HORIZONTAL);
 
         goalsStatusTextView = new TextView(this);
         goalsStatusTextView.setTextSize(16);
@@ -245,10 +314,12 @@ public class MainActivity extends AppCompatActivity {
             centerControls.addView(resetBtn);
             centerControls.addView(undoBtn);
             centerControls.addView(replayBtn);
+            centerControls.addView(pauseBtn);
             centerControls.addView(muteBtn);
             centerControls.addView(spinnerRow);
 
             verticalLayout.addView(titleTextView);
+            verticalLayout.addView(timerTextView);
             verticalLayout.addView(goalsStatusTextView);
             verticalLayout.addView(centerControls);
 
@@ -263,6 +334,7 @@ public class MainActivity extends AppCompatActivity {
 
             verticalLayout.addView(goalsStatusTextView);
             verticalLayout.addView(moveCounterTextView);
+            verticalLayout.addView(timerTextView);
 
             LinearLayout buttonRow = new LinearLayout(this);
             buttonRow.setOrientation(LinearLayout.HORIZONTAL);
@@ -271,6 +343,7 @@ public class MainActivity extends AppCompatActivity {
             buttonRow.addView(resetBtn);
             buttonRow.addView(undoBtn);
             buttonRow.addView(replayBtn);
+            buttonRow.addView(pauseBtn);
             buttonRow.addView(muteBtn);
 
             verticalLayout.addView(buttonRow);
@@ -289,8 +362,12 @@ public class MainActivity extends AppCompatActivity {
         viewModel.getMoveCount().observe(this, count -> moveCounterTextView.setText(getString(R.string.moves_format, count)));
 
         setContentView(root);
+//        restoreTimerState();
         syncMazeViewFromViewModel();
-        recordStartPosition();
+//        recordStartPosition();
+        if (savedInstanceState == null) {
+            recordStartPosition(); // only reset timer on first launch, not rotation
+        }
 
         // Spinner setup
         List<String> levelLabels = new ArrayList<>();
@@ -315,6 +392,8 @@ public class MainActivity extends AppCompatActivity {
                     viewModel.setLevel(position);
                     syncMazeViewFromViewModel();
                     movePlaybackTrail.clear();
+                    pauseBtn.setEnabled(false);
+                    isSolved = false;
                     recordStartPosition();
                     levelSpinner.setEnabled(true);
                 }
@@ -381,15 +460,26 @@ public class MainActivity extends AppCompatActivity {
         viewModel.getGoalsRemaining().observe(this, remaining -> {
             if (goalsStatusTextView == null) return;
 
-            if (remaining <= 0) {
+            if (remaining <= 0 && !isSolved) {
+                isSolved = true;
+
+                long solveTimeMillis = isPaused ? pausedTime - startTime : System.currentTimeMillis() - startTime;
+                final String solveTimeFormatted = String.format(Locale.US, "%02d:%02d",
+                        (solveTimeMillis / 1000) / 60,
+                        (solveTimeMillis / 1000) % 60
+                );
+
                 goalsStatusTextView.setText(getString(R.string.solved));
 
                 if (!isMuted && winSfx != null) {
                     winSfx.start();
                 }
 
-                Toast toast = Toast.makeText(MainActivity.this, getString(R.string.solved), Toast.LENGTH_SHORT);
-                toast.show();
+                String message = getString(R.string.solved) + "\n" + getString(R.string.time_format, solveTimeFormatted);
+                Toast.makeText(MainActivity.this, message, Toast.LENGTH_SHORT).show();
+
+//                Toast toast = Toast.makeText(MainActivity.this, getString(R.string.solved), Toast.LENGTH_SHORT);
+//                toast.show();
 
                 Snackbar snackbar = Snackbar.make(
                         findViewById(android.R.id.content),
@@ -409,10 +499,17 @@ public class MainActivity extends AppCompatActivity {
                         Toast endToast = Toast.makeText(MainActivity.this, getString(R.string.no_more_levels), Toast.LENGTH_LONG);
                         endToast.show();
                     }
+
+                    restoreTimerState();
                 });
 
                 snackbar.setDuration(Snackbar.LENGTH_LONG);
                 snackbar.show();
+
+                timerHandler.removeCallbacks(timerRunnable);
+                isPaused = true;
+                hasTimerStarted = false;
+                pauseBtn.setEnabled(false);
             } else {
                 String star = getString(R.string.goal);
                 String goalText = getString(R.string.goals_remaining_star, star, remaining);
@@ -433,6 +530,12 @@ public class MainActivity extends AppCompatActivity {
         }
 
         outState.putSerializable("move_trail", serializableTrail);
+        // Keep time
+        outState.putLong("start_time", startTime);
+        outState.putBoolean("has_timer_started", hasTimerStarted);
+        outState.putBoolean("is_paused", isPaused);
+        outState.putLong("paused_time", pausedTime);
+        outState.putBoolean("is_solved", isSolved);
     }
 
     @Override
@@ -509,6 +612,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void recordStartPosition() {
+        hasTimerStarted = false;
+        timerHandler.removeCallbacks(timerRunnable);
+        timerTextView.setText(getString(R.string.time_format, "00:00"));
+
         Integer row = viewModel.getEyeballRow().getValue();
         Integer col = viewModel.getEyeballCol().getValue();
 
@@ -517,5 +624,59 @@ public class MainActivity extends AppCompatActivity {
             movePlaybackTrail.add(new Point(col, row));
             viewModel.updateCanReplay(movePlaybackTrail);
         }
+    }
+
+    private void updateTimerDisplay(long elapsedMillis) {
+        int seconds = (int) (elapsedMillis / 1000);
+        int minutes = seconds / 60;
+        seconds = seconds % 60;
+
+        String time = String.format(Locale.US, "%02d:%02d", minutes, seconds);
+        timerTextView.setText(getString(R.string.time_format, time));
+
+        if (pauseBtn != null) {
+            pauseBtn.setEnabled(elapsedMillis > 0);
+        }
+    }
+
+    private void restoreTimerState() {
+        if (!hasTimerStarted || pauseBtn == null) {
+            updateTimerDisplay(0);
+            pauseBtn.setEnabled(false);
+            mazeView.setVisibility(View.VISIBLE); // ensure visible in default case
+            pauseBtn.setText(getString(R.string.pause));
+            return;
+        }
+
+        long elapsed;
+
+        if (isPaused && !isSolved) {
+            elapsed = pausedTime - startTime;
+            mazeView.setVisibility(View.INVISIBLE); // <-- Fix: hide again if paused
+            pauseBtn.setText(getString(R.string.resume)); // <-- Fix: correct label
+        } else {
+            elapsed = System.currentTimeMillis() - startTime;
+            mazeView.setVisibility(View.VISIBLE);
+            pauseBtn.setText(getString(R.string.pause));
+            timerHandler.post(timerRunnable);
+        }
+
+        updateTimerDisplay(elapsed);
+        pauseBtn.setEnabled(elapsed > 0 && !isSolved);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        timerHandler.removeCallbacks(timerRunnable);
+        if (hasTimerStarted && !isPaused) {
+            pausedTime = System.currentTimeMillis();
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        restoreTimerState();
     }
 }
