@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
 
 import android.widget.AdapterView;
@@ -12,6 +13,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.TextView;
 
@@ -169,9 +171,16 @@ public class MainActivity extends AppCompatActivity {
         LinearLayout.LayoutParams mazeParams = new LinearLayout.LayoutParams(
                 isLandscape ? 0 : LayoutParams.MATCH_PARENT,
                 isLandscape ? LayoutParams.MATCH_PARENT : 0,
-                0.8f
+                isLandscape ? 0.7f : 1.0f
         );
+        mazeView.setLayoutParams(mazeParams);
         root.addView(mazeView, mazeParams);
+
+//        LinearLayout.LayoutParams mazeParams = new LinearLayout.LayoutParams(
+//                isLandscape ? 0 : LayoutParams.MATCH_PARENT,
+//                isLandscape ? LayoutParams.MATCH_PARENT : 0,
+//                1.0f
+//        );
 
         // Controls container
         LinearLayout controls = new LinearLayout(this);
@@ -294,77 +303,126 @@ public class MainActivity extends AppCompatActivity {
                     LayoutParams.WRAP_CONTENT
             ));
 
-            LinearLayout verticalLayout = new LinearLayout(this);
-            verticalLayout.setOrientation(LinearLayout.VERTICAL);
-            verticalLayout.setLayoutParams(new LinearLayout.LayoutParams(
+            ScrollView scrollView = new ScrollView(this);
+            scrollView.setLayoutParams(new LinearLayout.LayoutParams(
                     LayoutParams.MATCH_PARENT,
                     LayoutParams.MATCH_PARENT
             ));
 
-            LinearLayout centerControls = new LinearLayout(this);
-            centerControls.setOrientation(LinearLayout.VERTICAL);
-            centerControls.setGravity(Gravity.CENTER);
-            centerControls.setLayoutParams(new LinearLayout.LayoutParams(
-                    LayoutParams.MATCH_PARENT,
-                    0,
-                    1f
-            ));
-
-            centerControls.addView(moveCounterTextView);
-            centerControls.addView(resetBtn);
-            centerControls.addView(undoBtn);
-            centerControls.addView(replayBtn);
-            centerControls.addView(pauseBtn);
-            centerControls.addView(muteBtn);
-            centerControls.addView(spinnerRow);
+            LinearLayout verticalLayout = new LinearLayout(this);
+            verticalLayout.setOrientation(LinearLayout.VERTICAL);
+            verticalLayout.setPadding(16, 16, 16, 16);
+            verticalLayout.setGravity(Gravity.CENTER_HORIZONTAL);
+            scrollView.addView(verticalLayout);
 
             verticalLayout.addView(titleTextView);
             verticalLayout.addView(timerTextView);
             verticalLayout.addView(goalsStatusTextView);
-            verticalLayout.addView(centerControls);
+            verticalLayout.addView(moveCounterTextView);
 
-            controls.addView(verticalLayout);
+            LinearLayout row1 = new LinearLayout(this);
+            row1.setOrientation(LinearLayout.HORIZONTAL);
+            row1.setGravity(Gravity.CENTER_HORIZONTAL);
+            row1.setPadding(0, 8, 0, 8);
+            row1.addView(resetBtn);
+            row1.addView(undoBtn);
+            verticalLayout.addView(row1);
+
+            LinearLayout row2 = new LinearLayout(this);
+            row2.setOrientation(LinearLayout.HORIZONTAL);
+            row2.setGravity(Gravity.CENTER_HORIZONTAL);
+            row2.setPadding(0, 8, 0, 8);
+            row2.addView(replayBtn);
+            row2.addView(pauseBtn);
+            verticalLayout.addView(row2);
+
+            LinearLayout row3 = new LinearLayout(this);
+            row3.setOrientation(LinearLayout.HORIZONTAL);
+            row3.setGravity(Gravity.CENTER_HORIZONTAL);
+            row3.setPadding(0, 8, 0, 0);
+            row3.addView(muteBtn);
+            verticalLayout.addView(row3);
+
+            verticalLayout.addView(spinnerRow);
+
+            controls.addView(scrollView);
         } else {
-            controls.setGravity(Gravity.CENTER);
-//            controls.setPadding(16, 16, 16, 16);
+            ScrollView scrollView = new ScrollView(this);
+            scrollView.setLayoutParams(new LinearLayout.LayoutParams(
+                    LayoutParams.MATCH_PARENT,
+                    LayoutParams.MATCH_PARENT
+            ));
 
             LinearLayout verticalLayout = new LinearLayout(this);
             verticalLayout.setOrientation(LinearLayout.VERTICAL);
+            verticalLayout.setPadding(16, 16, 16, 16);
             verticalLayout.setGravity(Gravity.CENTER_HORIZONTAL);
+            scrollView.addView(verticalLayout);
 
             verticalLayout.addView(goalsStatusTextView);
             verticalLayout.addView(moveCounterTextView);
             verticalLayout.addView(timerTextView);
 
-            LinearLayout buttonRow = new LinearLayout(this);
-            buttonRow.setOrientation(LinearLayout.HORIZONTAL);
-            buttonRow.setGravity(Gravity.CENTER_HORIZONTAL);
+            LinearLayout row1 = new LinearLayout(this);
+            row1.setOrientation(LinearLayout.HORIZONTAL);
+            row1.setGravity(Gravity.CENTER_HORIZONTAL);
+            row1.setPadding(0, 8, 0, 8);
+            row1.addView(resetBtn);
+            row1.addView(undoBtn);
+            row1.addView(replayBtn);
 
-            buttonRow.addView(resetBtn);
-            buttonRow.addView(undoBtn);
-            buttonRow.addView(replayBtn);
-            buttonRow.addView(pauseBtn);
-            buttonRow.addView(muteBtn);
+            LinearLayout row2 = new LinearLayout(this);
+            row2.setOrientation(LinearLayout.HORIZONTAL);
+            row2.setGravity(Gravity.CENTER_HORIZONTAL);
+            row2.setPadding(0, 8, 0, 8);
+            row2.addView(pauseBtn);
+            row2.addView(muteBtn);
 
-            verticalLayout.addView(buttonRow);
+            verticalLayout.addView(row1);
+            verticalLayout.addView(row2);
             verticalLayout.addView(spinnerRow);
 
-            controls.addView(verticalLayout);
+            controls.removeAllViews();
+            controls.setGravity(Gravity.NO_GRAVITY); // Fill space
+            controls.addView(scrollView);
         }
 
         LinearLayout.LayoutParams controlsParams = new LinearLayout.LayoutParams(
                 isLandscape ? 0 : LayoutParams.MATCH_PARENT,
                 isLandscape ? LayoutParams.MATCH_PARENT : LayoutParams.WRAP_CONTENT,
-                0.3f // how much screen to take up 30%
+                0.4f // how much screen to take up 40%
         );
         root.addView(controls, controlsParams);
 
         viewModel.getMoveCount().observe(this, count -> moveCounterTextView.setText(getString(R.string.moves_format, count)));
 
         setContentView(root);
-//        restoreTimerState();
         syncMazeViewFromViewModel();
-//        recordStartPosition();
+
+        mazeView.post(() -> {
+            int screenWidth = root.getWidth();
+            int screenHeight = root.getHeight();
+
+            if (isLandscape) {
+                // Use full height, and share width via weight
+                int size = Math.min(screenHeight, (int)(screenWidth * 0.6)); // 60% width max
+                ViewGroup.LayoutParams params = mazeView.getLayoutParams();
+                params.width = size;
+                params.height = size;
+                mazeView.setLayoutParams(params);
+            } else {
+                int controlsHeight = controls.getHeight();
+                int availableHeight = screenHeight - controlsHeight;
+                int size = Math.min(screenWidth, availableHeight);
+                ViewGroup.LayoutParams params = mazeView.getLayoutParams();
+                params.width = size;
+                params.height = size;
+                mazeView.setLayoutParams(params);
+            }
+
+            mazeView.invalidate();
+        });
+
         if (savedInstanceState == null) {
             recordStartPosition(); // only reset timer on first launch, not rotation
         }
