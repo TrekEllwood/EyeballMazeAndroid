@@ -74,4 +74,8 @@ public interface IGame {
     public int getBoardWidth();
 
     public int getMazeIdAt(int index);
+
+    Object saveState();
+
+    void loadState(Object state);
 }

@@ -9,6 +9,8 @@ public abstract class Square {
     protected Shape shape;
     protected final SquareType type;
 
+    public abstract Square copy(); // ADDED: for undo
+
     public Square(SquareType type, Color color, Shape shape) {
 	this.type = type;
 	this.color = color;

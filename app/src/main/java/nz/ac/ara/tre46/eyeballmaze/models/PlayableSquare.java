@@ -6,11 +6,16 @@ import nz.ac.ara.tre46.eyeballmaze.enums.SquareType;
 
 public class PlayableSquare extends Square {
     public PlayableSquare(Color color, Shape shape) {
-	super(SquareType.PLAYABLE, color, shape);
+        super(SquareType.PLAYABLE, color, shape);
     }
 
     @Override
     public boolean isPlayable() {
-	return true;
+        return true;
+    }
+
+    @Override
+    public Square copy() { // ADDED: for undo
+        return new PlayableSquare(this.getColor(), this.getShape());
     }
 }

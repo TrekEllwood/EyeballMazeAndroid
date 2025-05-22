@@ -38,6 +38,7 @@ public class MainActivity extends AppCompatActivity {
     private MazeView mazeView;
     private TextView titleTextView;
     private TextView goalsStatusTextView;
+    private TextView moveCounterTextView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,17 +78,44 @@ public class MainActivity extends AppCompatActivity {
         );
         root.addView(mazeView, mazeParams);
 
-        // Controls
+        // Controls container
         LinearLayout controls = new LinearLayout(this);
         controls.setOrientation(isLandscape ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL);
 
+        // Spinner row: label + spinner side by side
+        LinearLayout spinnerRow = new LinearLayout(this);
+        spinnerRow.setOrientation(LinearLayout.HORIZONTAL);
+        spinnerRow.setGravity(Gravity.CENTER_HORIZONTAL);
+
+        TextView spinnerLabel = new TextView(this);
+        spinnerLabel.setText(getString(R.string.choose_maze));
+        spinnerLabel.setTextSize(16);
+        spinnerLabel.setPadding(0, 0, 16, 0);  // space between label and spinner
+
         Spinner levelSpinner = new Spinner(this);
+        LinearLayout.LayoutParams spinnerParams = new LinearLayout.LayoutParams(
+                LayoutParams.WRAP_CONTENT,
+                LayoutParams.WRAP_CONTENT
+        );
+        levelSpinner.setLayoutParams(spinnerParams);
+
+        spinnerRow.addView(spinnerLabel);
+        spinnerRow.addView(levelSpinner);
+
         Button resetBtn = new Button(this);
         resetBtn.setText(getString(R.string.reset));
         resetBtn.setOnClickListener(v -> {
             viewModel.resetMaze();
             mazeView.setGoalPositions(viewModel.getGoalPoints());
         });
+
+        Button undoBtn = new Button(this);
+        undoBtn.setText(getString(R.string.undo));
+        undoBtn.setOnClickListener(v -> {
+            viewModel.undo();
+            syncMazeViewFromViewModel();
+        });
+        viewModel.canUndoLiveData().observe(this, canUndo -> undoBtn.setEnabled(Boolean.TRUE.equals(canUndo)));
 
         goalsStatusTextView = new TextView(this);
         goalsStatusTextView.setTextSize(16);
@@ -97,8 +125,11 @@ public class MainActivity extends AppCompatActivity {
                 LayoutParams.WRAP_CONTENT
         ));
 
+        moveCounterTextView = new TextView(this);
+        moveCounterTextView.setTextSize(16);
+        moveCounterTextView.setGravity(Gravity.CENTER_HORIZONTAL);
+
         if (isLandscape) {
-            // Landscape layout
             titleTextView = new TextView(this);
             titleTextView.setTextSize(20);
             titleTextView.setGravity(Gravity.CENTER_HORIZONTAL);
@@ -114,9 +145,6 @@ public class MainActivity extends AppCompatActivity {
                     LayoutParams.MATCH_PARENT
             ));
 
-            verticalLayout.addView(titleTextView);
-            verticalLayout.addView(goalsStatusTextView);
-
             LinearLayout centerControls = new LinearLayout(this);
             centerControls.setOrientation(LinearLayout.VERTICAL);
             centerControls.setGravity(Gravity.CENTER);
@@ -126,13 +154,17 @@ public class MainActivity extends AppCompatActivity {
                     1f
             ));
 
-            centerControls.addView(levelSpinner);
+            centerControls.addView(moveCounterTextView);
             centerControls.addView(resetBtn);
+            centerControls.addView(undoBtn);
+            centerControls.addView(spinnerRow);
+
+            verticalLayout.addView(titleTextView);
+            verticalLayout.addView(goalsStatusTextView);
             verticalLayout.addView(centerControls);
 
             controls.addView(verticalLayout);
         } else {
-            // Portrait layout
             controls.setGravity(Gravity.CENTER);
             controls.setPadding(16, 16, 16, 16);
 
@@ -141,13 +173,14 @@ public class MainActivity extends AppCompatActivity {
             verticalLayout.setGravity(Gravity.CENTER_HORIZONTAL);
 
             verticalLayout.addView(goalsStatusTextView);
-            verticalLayout.addView(levelSpinner);
+            verticalLayout.addView(moveCounterTextView);
             verticalLayout.addView(resetBtn);
+            verticalLayout.addView(undoBtn);
+            verticalLayout.addView(spinnerRow);
 
             controls.addView(verticalLayout);
         }
 
-        // Add controls to root
         LinearLayout.LayoutParams controlsParams = new LinearLayout.LayoutParams(
                 isLandscape ? 0 : LayoutParams.MATCH_PARENT,
                 isLandscape ? LayoutParams.MATCH_PARENT : LayoutParams.WRAP_CONTENT,
@@ -155,13 +188,17 @@ public class MainActivity extends AppCompatActivity {
         );
         root.addView(controls, controlsParams);
 
+        viewModel.getMoveCount().observe(this, count -> moveCounterTextView.setText(getString(R.string.moves_format, count)));
+
+        setContentView(root);
         syncMazeViewFromViewModel();
 
-        // Build level spinner adapter
+        // Spinner setup
         List<String> levelLabels = new ArrayList<>();
         for (int i = 0; i < viewModel.getLevelCount(); i++) {
             levelLabels.add("Maze " + viewModel.getMazeIdAt(i));
         }
+
         ArrayAdapter<String> adapter = new ArrayAdapter<>(
                 this, android.R.layout.simple_spinner_item, levelLabels);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -187,8 +224,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        setContentView(root);
-
+        // Set up observers (unchanged from before)
         mazeView.setColorProvider(viewModel::getColorAt);
         mazeView.setShapeProvider(viewModel::getShapeAt);
         mazeView.setTypeProvider(viewModel::getTypeAt);
@@ -210,7 +246,6 @@ public class MainActivity extends AppCompatActivity {
         });
 
         viewModel.getEyeballDir().observe(this, mazeView::setDirection);
-
         viewModel.isCurrentGoal().observe(this, isGoal -> {
             mazeView.setCurrentSquareIsGoal(isGoal);
             mazeView.invalidate();
@@ -256,9 +291,12 @@ public class MainActivity extends AppCompatActivity {
                         })
                         .show();
             } else {
-                goalsStatusTextView.setText(
-                        getResources().getQuantityString(R.plurals.goals_remaining, remaining, remaining)
-                );
+//                goalsStatusTextView.setText(
+//                        getResources().getQuantityString(R.plurals.goals_remaining, remaining, remaining)
+//                );
+                String star = getString(R.string.goal);
+                String goalText = getString(R.string.goals_remaining_star, star, remaining);
+                goalsStatusTextView.setText(goalText);
             }
         });
     }

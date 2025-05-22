@@ -13,4 +13,9 @@ public class BlankSquare extends Square {
     public boolean isPlayable() {
 	return false;
     }
+
+    @Override
+    public Square copy() { // ADDED: for undo
+        return new BlankSquare();
+    }
 }

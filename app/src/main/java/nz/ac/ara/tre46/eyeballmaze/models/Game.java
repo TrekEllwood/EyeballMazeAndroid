@@ -44,9 +44,9 @@ public class Game implements IGame, IGoalHolder, IEyeballHolder, ILevelHolder, I
     private boolean currentSquareWasGoal = false;
 
     public Game() {
-	levelHolder = new LevelHolder();
-	goalHolder = new GoalHolder();
-	moving = new Moving(this);
+        levelHolder = new LevelHolder();
+        goalHolder = new GoalHolder();
+        moving = new Moving(this);
 //	squareHolder = new SquareHolder(); // CHANGE
     }
 
@@ -57,6 +57,7 @@ public class Game implements IGame, IGoalHolder, IEyeballHolder, ILevelHolder, I
         String[] levelLines = loadLevelFromRaw(context, R.raw.levels);
         loadLevelFromText(levelLines);
     }
+
     // ADDED #2: it now owns responsibility for loading and initialising levels
     private String[] loadLevelFromRaw(Context ctx, int resId) {
         List<String> lines = new ArrayList<>();
@@ -74,9 +75,9 @@ public class Game implements IGame, IGoalHolder, IEyeballHolder, ILevelHolder, I
 
     @Override
     public void addLevel(int height, int width) {
-	levelHolder.addLevel(height, width);
-	// Set the most recently added level as the current level.
-	setLevel(levelHolder.getLevelCount() - 1);
+        levelHolder.addLevel(height, width);
+        // Set the most recently added level as the current level.
+        setLevel(levelHolder.getLevelCount() - 1);
     }
 
 //    @Override
@@ -153,192 +154,200 @@ public class Game implements IGame, IGoalHolder, IEyeballHolder, ILevelHolder, I
 
     @Override
     public int getLevelWidth() {
-	return levelHolder.getLevelWidth();
+        return levelHolder.getLevelWidth();
     }
 
     @Override
     public int getLevelHeight() {
-	return levelHolder.getLevelHeight();
+        return levelHolder.getLevelHeight();
     }
 
     @Override
     public int getLevelCount() {
-	return levelHolder.getLevelCount();
+        return levelHolder.getLevelCount();
     }
 
     @Override
     public int getEyeballRow() {
-	return (player != null) ? player.getRow() : -1;
+        return (player != null) ? player.getRow() : -1;
     }
 
     @Override
     public int getEyeballColumn() {
-	return (player != null) ? player.getColumn() : -1;
+        return (player != null) ? player.getColumn() : -1;
     }
 
     @Override
     public Direction getEyeballDirection() {
-	return (player != null) ? player.getDirection() : null;
+        return (player != null) ? player.getDirection() : null;
     }
 
     @Override
     public void addEyeball(int row, int column, Direction direction) {
-	// TODO: create helper/util
-	if (row < 0 || row >= getLevelHeight() || column < 0 || column >= getLevelWidth()) {
-	    throw new IllegalArgumentException("Eyeball position out of bounds: (" + row + ", " + column + ")");
-	}
-	player = new Player(row, column, direction);
+        // TODO: create helper/util
+        if (row < 0 || row >= getLevelHeight() || column < 0 || column >= getLevelWidth()) {
+            throw new IllegalArgumentException("Eyeball position out of bounds: (" + row + ", " + column + ")");
+        }
+        player = new Player(row, column, direction);
     }
 
     @Override
     public void setEyeballRow(int row) {
-	if (player != null) {
-	    player.setRow(row);
-	}
+        if (player != null) {
+            player.setRow(row);
+        }
     }
 
     @Override
     public void setEyeballColumn(int column) {
-	if (player != null) {
-	    player.setColumn(column);
-	}
+        if (player != null) {
+            player.setColumn(column);
+        }
     }
+
+    public void setEyeballPosition(int row, int col) { // ADDED: for undo
+        if (player != null) {
+            player.setRow(row);
+            player.setColumn(col);
+        }
+    }
+
 
     @Override
     public void setEyeballDirection(Direction direction) {
-	if (player != null) {
-	    player.setDirection(direction);
-	}
+        if (player != null) {
+            player.setDirection(direction);
+        }
     }
 
     @Override
     public void addGoal(int row, int column) {
-	// TODO: create helper/util
-	if (row < 0 || row >= getLevelHeight() || column < 0 || column >= getLevelWidth()) {
-	    throw new IllegalArgumentException("Goal position out of bounds: (" + row + "," + column + ")");
-	}
-	goalHolder.addGoal(row, column);
+        // TODO: create helper/util
+        if (row < 0 || row >= getLevelHeight() || column < 0 || column >= getLevelWidth()) {
+            throw new IllegalArgumentException("Goal position out of bounds: (" + row + "," + column + ")");
+        }
+        goalHolder.addGoal(row, column);
     }
 
     @Override
     public int getGoalCount() {
-	return goalHolder.getGoalCount();
+        return goalHolder.getGoalCount();
     }
 
     @Override
     public boolean hasGoalAt(int targetRow, int targetColumn) {
-	return goalHolder.hasGoalAt(targetRow, targetColumn);
+        return goalHolder.hasGoalAt(targetRow, targetColumn);
     }
 
     @Override
     public int getCompletedGoalCount() {
-	return goalHolder.getCompletedGoalCount();
+        return goalHolder.getCompletedGoalCount();
     }
 
     @Override
     public boolean areAllGoalsCompleted() {
-	return goalHolder.areAllGoalsCompleted();
+        return goalHolder.areAllGoalsCompleted();
     }
 
     @Override
     public void completedGoal(int row, int column) {
-	goalHolder.completedGoal(row, column);
+        goalHolder.completedGoal(row, column);
     }
 
     @Override
     public void removeGoalAt(int row, int column) {
-	goalHolder.removeGoalAt(row, column);
+        goalHolder.removeGoalAt(row, column);
     }
 
     @Override
     public Set<IGoal> getGoals() {
-	return goalHolder.getGoals();
+        return goalHolder.getGoals();
     }
 
     @Override
     public void setGoals(Collection<IGoal> newGoals) {
-	goalHolder.setGoals(newGoals);
+        goalHolder.setGoals(newGoals);
     }
 
     @Override
     public void addSquare(Square square, int row, int column) {
-	// TODO: create helper/util
-	if (row < 0 || row >= getLevelHeight() || column < 0 || column >= getLevelWidth()) {
-	    throw new IllegalArgumentException("Square position out of bounds: (" + row + "," + column + ")");
-	}
-	squareHolder.addSquare(square, row, column);
+        // TODO: create helper/util
+        if (row < 0 || row >= getLevelHeight() || column < 0 || column >= getLevelWidth()) {
+            throw new IllegalArgumentException("Square position out of bounds: (" + row + "," + column + ")");
+        }
+        squareHolder.addSquare(square, row, column);
     }
 
     @Override
     public void resetBoard(int width, int height) {
-	squareHolder.resetBoard(width, height);
+        squareHolder.resetBoard(width, height);
     }
 
     @Override
     public Square[][] getBoardData() {
-	return squareHolder.getBoardData();
+        return squareHolder.getBoardData();
     }
 
     @Override
     public SquareType getTypeAt(int row, int column) {
-	return squareHolder.getTypeAt(row, column);
+        return squareHolder.getTypeAt(row, column);
     }
 
     @Override
     public Color getColorAt(int row, int column) {
-	return squareHolder.getColorAt(row, column);
+        return squareHolder.getColorAt(row, column);
     }
 
     @Override
     public Shape getShapeAt(int row, int column) {
-	return squareHolder.getShapeAt(row, column);
+        return squareHolder.getShapeAt(row, column);
     }
 
     @Override // ADDED
     public boolean canMoveTo(int destinationRow, int destinationColumn) {
-	return moving.canMoveTo(destinationRow, destinationColumn);
+        return moving.canMoveTo(destinationRow, destinationColumn);
     }
 
     @Override // ADDED
     public Message messageIfMovingTo(int destinationRow, int destinationColumn) {
-	return moving.messageIfMovingTo(destinationRow, destinationColumn);
+        return moving.messageIfMovingTo(destinationRow, destinationColumn);
     }
 
     public boolean isDirectionOK(int destinationRow, int destinationColumn) {
-	return moving.isDirectionOK(destinationRow, destinationColumn);
+        return moving.isDirectionOK(destinationRow, destinationColumn);
     }
 
     public Message checkDirectionMessage(int destinationRow, int destinationColumn) {
-	return moving.checkDirectionMessage(destinationRow, destinationColumn);
+        return moving.checkDirectionMessage(destinationRow, destinationColumn);
     }
 
     public boolean hasBlankFreePathTo(int destinationRow, int destinationColumn) {
-	return moving.hasBlankFreePathTo(destinationRow, destinationColumn);
+        return moving.hasBlankFreePathTo(destinationRow, destinationColumn);
     }
 
     public Message checkMessageForBlankOnPathTo(int destinationRow, int destinationColumn) {
-	return moving.checkMessageForBlankOnPathTo(destinationRow, destinationColumn);
+        return moving.checkMessageForBlankOnPathTo(destinationRow, destinationColumn);
     }
 
     @Override // ADDED
     public void moveTo(int destinationRow, int destinationColumn) {
-	moving.moveTo(destinationRow, destinationColumn);
+        moving.moveTo(destinationRow, destinationColumn);
     }
 
     @Override
     public Square getSquareAt(int row, int column) {
-	return squareHolder.getSquareAt(row, column);
+        return squareHolder.getSquareAt(row, column);
     }
 
     // Goal completion tracking
     @Override
     public boolean isCurrentSquareGoal() {
-	return currentSquareWasGoal;
+        return currentSquareWasGoal;
     }
 
     @Override
     public void setCurrentSquareGoal(boolean flag) {
-	currentSquareWasGoal = flag;
+        currentSquareWasGoal = flag;
     }
 
     // ADDED
@@ -361,6 +370,14 @@ public class Game implements IGame, IGoalHolder, IEyeballHolder, ILevelHolder, I
         return set;
     }
 
+    public void setRemainingGoalPoints(Set<Point> points) { // ADDED: for undo
+        Set<IGoal> goals = new HashSet<>();
+        for (Point p : points) {
+            goals.add(new Goal(p.y, p.x)); // Point = (x, y), Goal = (row, col)
+        }
+        goalHolder.setGoals(goals);
+    }
+
     public int getBoardHeight() {
         return levelHolder.getLevelHeight();
     }
@@ -376,5 +393,52 @@ public class Game implements IGame, IGoalHolder, IEyeballHolder, ILevelHolder, I
             return (maze != null) ? maze.getMazeNumber() : index + 1;
         }
         return index + 1;
+    }
+
+    @Override
+    public Object saveState() { // ADDED: for undo
+        Square[][] original = getBoardData();
+        Square[][] boardCopy = new Square[original.length][];
+
+        for (int r = 0; r < original.length; r++) {
+            boardCopy[r] = new Square[original[r].length];
+            for (int c = 0; c < original[r].length; c++) {
+                Square sq = original[r][c];
+                if (sq != null) {
+                    boardCopy[r][c] = sq.copy();
+                }
+            }
+        }
+
+        return new GameState(
+                getEyeballRow(),
+                getEyeballColumn(),
+                getEyeballDirection(),
+                getRemainingGoalPoints(),
+                boardCopy
+        );
+    }
+
+    @Override
+    public void loadState(Object state) { // ADDED: for undo
+        if (!(state instanceof GameState gs)) {
+            throw new IllegalArgumentException("Invalid state object");
+        }
+        setEyeballPosition(gs.row(), gs.col());
+        setEyeballDirection(gs.direction());
+        setRemainingGoalPoints(gs.goalPoints());
+
+        // Restore board
+        Square[][] board = gs.board();
+        squareHolder.resetBoard(board[0].length, board.length); // width, height
+
+        for (int r = 0; r < board.length; r++) {
+            for (int c = 0; c < board[r].length; c++) {
+                Square sq = board[r][c];
+                if (sq != null) {
+                    squareHolder.addSquare(sq.copy(), r, c); // copy to avoid shared reference
+                }
+            }
+        }
     }
 }
