@@ -29,6 +29,7 @@ public class EyeballMazeViewModel extends ViewModel {
     private final MutableLiveData<Integer> goalsRemaining = new MutableLiveData<>();
     private final MutableLiveData<Boolean> canUndoLiveData = new MutableLiveData<>(false);
     private final MutableLiveData<Integer> moveCount = new MutableLiveData<>(0);
+    private final MutableLiveData<Boolean> moveHappened = new MutableLiveData<>(false);
 
     private final Deque<Object> undoStack = new ArrayDeque<>();
     private static final int MAX_UNDO = 10;
@@ -80,6 +81,10 @@ public class EyeballMazeViewModel extends ViewModel {
         return moveCount;
     }
 
+    public LiveData<Boolean> getMoveHappened() {
+        return moveHappened;
+    }
+
     public void clearMoveStatus() {
         moveStatusLiveData.setValue(null);
     }
@@ -121,6 +126,7 @@ public class EyeballMazeViewModel extends ViewModel {
             game.moveTo(row, col);
             Integer current = moveCount.getValue();
             moveCount.setValue((current != null ? current : 0) + 1);
+            moveHappened.setValue(true);
         } else {
             moveStatusLiveData.setValue(game.messageIfMovingTo(row, col));
         }
@@ -214,5 +220,9 @@ public class EyeballMazeViewModel extends ViewModel {
     public void resetUndo() {
         undoStack.clear();
         canUndoLiveData.setValue(false);
+    }
+
+    public void clearMoveHappened() {
+        moveHappened.setValue(false);
     }
 }

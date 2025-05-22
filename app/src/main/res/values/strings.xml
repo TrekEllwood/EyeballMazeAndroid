@@ -17,4 +17,6 @@
     <string name="undo">Undo</string>
     <string name="choose_maze">Choose maze:</string>
     <string name="moves_format">Moves: %1$d</string>
+    <string name="mute">🔊</string>
+    <string name="unmute">🔇</string>
 </resources>

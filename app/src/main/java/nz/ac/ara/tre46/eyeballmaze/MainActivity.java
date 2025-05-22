@@ -1,6 +1,6 @@
 package nz.ac.ara.tre46.eyeballmaze;
 
-import android.graphics.Point;
+import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
@@ -19,13 +19,13 @@ import com.google.android.material.snackbar.Snackbar;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.content.ContextCompat;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.appcompat.app.AlertDialog;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import nz.ac.ara.tre46.eyeballmaze.enums.Message;
@@ -39,10 +39,18 @@ public class MainActivity extends AppCompatActivity {
     private TextView titleTextView;
     private TextView goalsStatusTextView;
     private TextView moveCounterTextView;
+    private MediaPlayer moveSfx;
+    private MediaPlayer winSfx;
+    private boolean isMuted = false;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        moveSfx = MediaPlayer.create(this, R.raw.move);
+        winSfx = MediaPlayer.create(this, R.raw.win);
 
         viewModel = new ViewModelProvider(
                 this,
@@ -64,6 +72,12 @@ public class MainActivity extends AppCompatActivity {
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(isLandscape ? LinearLayout.HORIZONTAL : LinearLayout.VERTICAL);
+
+        ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
+            int topInset = isLandscape ? 0 : insets.getInsets(WindowInsetsCompat.Type.systemBars()).top;
+            v.setPadding(0, topInset, 0, 0);
+            return insets;
+        });
 
         // MazeView
         mazeView = new MazeView(this);
@@ -117,6 +131,24 @@ public class MainActivity extends AppCompatActivity {
         });
         viewModel.canUndoLiveData().observe(this, canUndo -> undoBtn.setEnabled(Boolean.TRUE.equals(canUndo)));
 
+        Button muteBtn = new Button(this);
+        muteBtn.setText(getString(R.string.mute));
+        int muteWidthDp = 48;
+        float density = getResources().getDisplayMetrics().density;
+        int muteWidthPx = (int) (muteWidthDp * density + 0.5f);
+
+        LinearLayout.LayoutParams muteParams = new LinearLayout.LayoutParams(muteWidthPx, LayoutParams.WRAP_CONTENT);
+        muteBtn.setLayoutParams(muteParams);
+
+        muteBtn.setOnClickListener(v -> {
+            isMuted = !isMuted;
+            muteBtn.setText(getString(isMuted ? R.string.unmute : R.string.mute));
+
+            float volume = isMuted ? 0f : 1f;
+            if (moveSfx != null) moveSfx.setVolume(volume, volume);
+            if (winSfx != null) winSfx.setVolume(volume, volume);
+        });
+
         goalsStatusTextView = new TextView(this);
         goalsStatusTextView.setTextSize(16);
         goalsStatusTextView.setGravity(Gravity.CENTER_HORIZONTAL);
@@ -157,6 +189,7 @@ public class MainActivity extends AppCompatActivity {
             centerControls.addView(moveCounterTextView);
             centerControls.addView(resetBtn);
             centerControls.addView(undoBtn);
+            centerControls.addView(muteBtn);
             centerControls.addView(spinnerRow);
 
             verticalLayout.addView(titleTextView);
@@ -166,7 +199,7 @@ public class MainActivity extends AppCompatActivity {
             controls.addView(verticalLayout);
         } else {
             controls.setGravity(Gravity.CENTER);
-            controls.setPadding(16, 16, 16, 16);
+//            controls.setPadding(16, 16, 16, 16);
 
             LinearLayout verticalLayout = new LinearLayout(this);
             verticalLayout.setOrientation(LinearLayout.VERTICAL);
@@ -174,8 +207,16 @@ public class MainActivity extends AppCompatActivity {
 
             verticalLayout.addView(goalsStatusTextView);
             verticalLayout.addView(moveCounterTextView);
-            verticalLayout.addView(resetBtn);
-            verticalLayout.addView(undoBtn);
+
+            LinearLayout buttonRow = new LinearLayout(this);
+            buttonRow.setOrientation(LinearLayout.HORIZONTAL);
+            buttonRow.setGravity(Gravity.CENTER_HORIZONTAL);
+
+            buttonRow.addView(resetBtn);
+            buttonRow.addView(undoBtn);
+            buttonRow.addView(muteBtn);
+
+            verticalLayout.addView(buttonRow);
             verticalLayout.addView(spinnerRow);
 
             controls.addView(verticalLayout);
@@ -184,7 +225,7 @@ public class MainActivity extends AppCompatActivity {
         LinearLayout.LayoutParams controlsParams = new LinearLayout.LayoutParams(
                 isLandscape ? 0 : LayoutParams.MATCH_PARENT,
                 isLandscape ? LayoutParams.MATCH_PARENT : LayoutParams.WRAP_CONTENT,
-                0.2f
+                0.3f // how much screen to take up 30%
         );
         root.addView(controls, controlsParams);
 
@@ -235,6 +276,9 @@ public class MainActivity extends AppCompatActivity {
             if (col != null) {
                 mazeView.setEyeballPosition(row, col);
                 mazeView.setGoalPositions(viewModel.getGoalPoints());
+//                if (moveSfx != null) {
+//                    moveSfx.start();
+//                }
             }
         });
 
@@ -249,6 +293,13 @@ public class MainActivity extends AppCompatActivity {
         viewModel.isCurrentGoal().observe(this, isGoal -> {
             mazeView.setCurrentSquareIsGoal(isGoal);
             mazeView.invalidate();
+        });
+
+        viewModel.getMoveHappened().observe(this, happened -> {
+            if (Boolean.TRUE.equals(happened)) {
+                playMoveSound();
+                viewModel.clearMoveHappened();  // Optional helper method
+            }
         });
 
         viewModel.getMoveStatus().observe(this, message -> {
@@ -267,6 +318,10 @@ public class MainActivity extends AppCompatActivity {
 
             if (remaining <= 0) {
                 goalsStatusTextView.setText(getString(R.string.solved));
+
+                if (!isMuted && winSfx != null) {
+                    winSfx.start();
+                }
 
                 new AlertDialog.Builder(this)
                         .setTitle(R.string.solved)
@@ -307,6 +362,19 @@ public class MainActivity extends AppCompatActivity {
         outState.putInt("selected_level", viewModel.getCurrentLevelIndex());
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (moveSfx != null) {
+            moveSfx.release();
+            moveSfx = null;
+        }
+        if (winSfx != null) {
+            winSfx.release();
+            winSfx = null;
+        }
+    }
+
     private void syncMazeViewFromViewModel() {
         mazeView.setBoardSize(viewModel.getBoardHeight(), viewModel.getBoardWidth());
         mazeView.setGoalPositions(viewModel.getGoalPoints());
@@ -325,6 +393,13 @@ public class MainActivity extends AppCompatActivity {
             titleTextView.setText(title); // landscape
         } else {
             setTitle(title); // portrait
+        }
+    }
+
+    private void playMoveSound() {
+        if (!isMuted && moveSfx != null) {
+            moveSfx.seekTo(0);
+            moveSfx.start();
         }
     }
 }
