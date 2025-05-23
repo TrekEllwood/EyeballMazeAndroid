@@ -1,5 +1,8 @@
 package nz.ac.ara.tre46.eyeballmaze;
 
+import android.content.res.ColorStateList;
+import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Handler;
@@ -12,6 +15,7 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.Spinner;
@@ -26,8 +30,11 @@ import com.google.android.material.snackbar.Snackbar;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.content.res.AppCompatResources;
+import androidx.core.content.ContextCompat;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.core.widget.ImageViewCompat;
 import androidx.lifecycle.ViewModelProvider;
 
 import java.util.Deque;
@@ -56,7 +63,8 @@ public class MainActivity extends AppCompatActivity {
     private Button resetBtn;
     private Button undoBtn;
     private Button replayBtn;
-    private Button pauseBtn;
+    private ImageButton pauseBtn;
+    private ImageButton muteBtn;
     private boolean gameButtonsEnabled = true;
     private boolean isMuted = false;
     private long startTime = 0L;
@@ -131,6 +139,7 @@ public class MainActivity extends AppCompatActivity {
 
         // MazeView
         mazeView = new MazeView(this);
+        int tint = ContextCompat.getColor(this, R.color.iconTint);
         Bitmap eyeballBmp = BitmapFactory.decodeResource(getResources(), R.drawable.eyeball);
         mazeView.setEyeballBitmap(eyeballBmp);
 
@@ -232,17 +241,25 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        Button muteBtn = new Button(this);
-        muteBtn.setText(getString(R.string.mute));
-        int muteWidthDp = dpToPx(15);
-        float density = getResources().getDisplayMetrics().density;
-        int muteWidthPx = (int) (muteWidthDp * density + 0.5f);
+        muteBtn = new ImageButton(this);
+        muteBtn.setImageResource(R.drawable.baseline_volume_up_24);
+        muteBtn.setColorFilter(tint, PorterDuff.Mode.SRC_IN);
+        muteBtn.setContentDescription(getString(R.string.mute));
+        muteBtn.setBackground(null);
 
-        LinearLayout.LayoutParams muteParams = new LinearLayout.LayoutParams(muteWidthPx, LayoutParams.WRAP_CONTENT);
-        muteBtn.setLayoutParams(muteParams);
+        muteBtn.setLayoutParams(new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        ));
+
         muteBtn.setOnClickListener(v -> {
             isMuted = !isMuted;
-            muteBtn.setText(getString(isMuted ? R.string.unmute : R.string.mute));
+
+            if (isMuted) {
+                resetMuteStateUI();
+            } else {
+                setMuteStateUI();
+            }
 
             float volume = isMuted ? 0f : 1f;
             if (moveSfx != null) moveSfx.setVolume(volume, volume);
@@ -263,13 +280,14 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        pauseBtn = new Button(this);
+        pauseBtn = new ImageButton(this);
         pauseBtn.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
         ));
         pauseBtn.setEnabled(false);
-        pauseBtn.setText(getString(R.string.pause));
+//        pauseBtn.setColorFilter(tint, PorterDuff.Mode.SRC_IN);
+        pauseBtn.setBackground(null);
         pauseBtn.setOnClickListener(v -> {
             if (isPaused) {
                 // Resume
@@ -277,8 +295,6 @@ public class MainActivity extends AppCompatActivity {
                 startTime += pausedDuration;
                 isPaused = false;
                 setGameButtonsEnabled(true);
-//                pauseBtn.setText(getString(R.string.pause));
-//                mazeView.setVisibility(View.VISIBLE);
                 resetPausedStateUI();
                 timerHandler.post(timerRunnable);
             } else {
@@ -346,13 +362,14 @@ public class MainActivity extends AppCompatActivity {
             row2.setGravity(Gravity.CENTER_HORIZONTAL);
             row2.setPadding(0, 8, 0, 8);
             row2.addView(replayBtn);
-            row2.addView(pauseBtn);
+//            row2.addView(pauseBtn);
             verticalLayout.addView(row2);
 
             LinearLayout row3 = new LinearLayout(this);
             row3.setOrientation(LinearLayout.HORIZONTAL);
             row3.setGravity(Gravity.CENTER_HORIZONTAL);
             row3.setPadding(0, 8, 0, 0);
+            row3.addView(pauseBtn);
             row3.addView(muteBtn);
             verticalLayout.addView(row3);
 
@@ -410,6 +427,10 @@ public class MainActivity extends AppCompatActivity {
         if (savedInstanceState != null) {
             setGameButtonsEnabled(!isPaused);
         }
+
+        ColorStateList tintList = ContextCompat.getColorStateList(this, R.color.icon_tint);
+        ImageViewCompat.setImageTintList(pauseBtn, tintList);
+        ImageViewCompat.setImageTintList(muteBtn, tintList);
 
         viewModel.getMoveCount().observe(this, count -> moveCounterTextView.setText(getString(R.string.moves_format, count)));
 
@@ -479,7 +500,7 @@ public class MainActivity extends AppCompatActivity {
         // Observers
         mazeView.setColorProvider(viewModel::getColorAt);
         mazeView.setShapeProvider(viewModel::getShapeAt);
-        mazeView.setTypeProvider(viewModel::getTypeAt);
+//        mazeView.setTypeProvider(viewModel::getTypeAt);
         mazeView.setGoalPositions(viewModel.getGoalPoints());
 
         viewModel.getEyeballRow().observe(this, row -> {
@@ -550,9 +571,6 @@ public class MainActivity extends AppCompatActivity {
                 String message = getString(R.string.solved) + "\n" + getString(R.string.time_format, solveTimeFormatted);
                 Toast.makeText(MainActivity.this, message, Toast.LENGTH_SHORT).show();
 
-//                Toast toast = Toast.makeText(MainActivity.this, getString(R.string.solved), Toast.LENGTH_SHORT);
-//                toast.show();
-
                 Snackbar snackbar = Snackbar.make(
                         findViewById(android.R.id.content),
                         getString(R.string.level_complete),
@@ -582,9 +600,15 @@ public class MainActivity extends AppCompatActivity {
                 hasTimerStarted = false;
                 pauseBtn.setEnabled(false);
             } else {
-                String star = getString(R.string.goal);
-                String goalText = getString(R.string.goals_remaining_star, star, remaining);
+                String goalText = getResources().getQuantityString(R.plurals.goals_remaining, remaining, remaining);
                 goalsStatusTextView.setText(goalText);
+
+                Drawable flagIcon = AppCompatResources.getDrawable(this, R.drawable.baseline_flag_circle_24);
+                if (flagIcon != null) {
+                    flagIcon.setTint(ContextCompat.getColor(this, R.color.iconTint));
+                    flagIcon.setBounds(0, 0, flagIcon.getIntrinsicWidth(), flagIcon.getIntrinsicHeight());
+                    goalsStatusTextView.setCompoundDrawables(flagIcon, null, flagIcon, null);
+                }
             }
         });
     }
@@ -631,7 +655,7 @@ public class MainActivity extends AppCompatActivity {
         mazeView.setGoalPositions(viewModel.getGoalPoints());
         mazeView.setColorProvider(viewModel::getColorAt);
         mazeView.setShapeProvider(viewModel::getShapeAt);
-        mazeView.setTypeProvider(viewModel::getTypeAt);
+//        mazeView.setTypeProvider(viewModel::getTypeAt);
         updateAppTitle();
         mazeView.invalidate();
     }
@@ -652,12 +676,6 @@ public class MainActivity extends AppCompatActivity {
             moveSfx.seekTo(0);
             moveSfx.start();
         }
-    }
-
-    @SuppressWarnings("SameParameterValue")
-    private int dpToPx(int dp) {
-        float density = getResources().getDisplayMetrics().density;
-        return Math.round(dp * density);
     }
 
     private void playBackMoves() {
@@ -758,20 +776,33 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setPausedStateUI() {
-        pauseBtn.setText(getString(R.string.resume));
+        pauseBtn.setImageResource(R.drawable.baseline_play_circle_24);
+        pauseBtn.setContentDescription(getString(R.string.resume));
         mazeView.setVisibility(View.INVISIBLE);
     }
 
     private void resetPausedStateUI() {
-        pauseBtn.setText(getString(R.string.pause));
+        pauseBtn.setImageResource(R.drawable.baseline_pause_circle_24);
+        pauseBtn.setContentDescription(getString(R.string.pause));
         mazeView.setVisibility(View.VISIBLE);
+    }
+
+    private void setMuteStateUI() {
+        muteBtn.setImageResource(R.drawable.baseline_volume_up_24);
+        muteBtn.setContentDescription(getString(R.string.unmute));
+    }
+
+    private void resetMuteStateUI() {
+        muteBtn.setImageResource(R.drawable.baseline_volume_off_24);
+        muteBtn.setContentDescription(getString(R.string.mute));
     }
 
     private void setGameButtonsEnabled(boolean enabled) {
         gameButtonsEnabled = enabled;
-        if (resetBtn != null) resetBtn.setEnabled(enabled);
+        if (resetBtn != null)
+            resetBtn.setEnabled(enabled || isSolved); // Keep enabled if maze is solved
         if (undoBtn != null) undoBtn.setEnabled(enabled);
-        if (replayBtn != null) replayBtn.setEnabled(enabled);
+        if (replayBtn != null) replayBtn.setEnabled(enabled || isSolved);
     }
 
     private void restoreTimerState(Bundle savedInstanceState) {

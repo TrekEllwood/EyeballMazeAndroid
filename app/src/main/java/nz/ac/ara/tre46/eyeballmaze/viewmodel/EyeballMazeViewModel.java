@@ -16,7 +16,6 @@ import nz.ac.ara.tre46.eyeballmaze.enums.Color;
 import nz.ac.ara.tre46.eyeballmaze.enums.Direction;
 import nz.ac.ara.tre46.eyeballmaze.enums.Message;
 import nz.ac.ara.tre46.eyeballmaze.enums.Shape;
-import nz.ac.ara.tre46.eyeballmaze.enums.SquareType;
 import nz.ac.ara.tre46.eyeballmaze.interfaces.IGame;
 
 public class EyeballMazeViewModel extends ViewModel {
@@ -41,14 +40,6 @@ public class EyeballMazeViewModel extends ViewModel {
         this.game = gameInstance;
         syncGameState();
     }
-
-//    public boolean canUndo() {
-//        return !undoStack.isEmpty();
-//    }
-
-//    public IGame getGame() {
-//        return game;
-//    }
 
     // === Accessors ===
     public LiveData<Integer> getEyeballRow() {
@@ -114,10 +105,6 @@ public class EyeballMazeViewModel extends ViewModel {
         return game.getBoardHeight();
     }
 
-    public SquareType getTypeAt(int row, int col) {
-        return game.getTypeAt(row, col);
-    }
-
     public Color getColorAt(int row, int col) {
         return game.getColorAt(row, col);
     }
@@ -141,23 +128,6 @@ public class EyeballMazeViewModel extends ViewModel {
 
     public boolean canMoveTo(int row, int col) {
         return game.canMoveTo(row, col);
-    }
-
-    public boolean hasGoalAt(int row, int col) {
-        return game.hasGoalAt(row, col);
-    }
-
-    public void removeGoalAt(int row, int col) {
-        game.removeGoalAt(row, col);
-        syncGameState();
-    }
-
-    public void completeCurrentGoal() {
-        if (game.isCurrentSquareGoal()) {
-            game.setCurrentSquareGoal(false);
-            game.completedGoal(game.getEyeballRow(), game.getEyeballColumn());
-        }
-        syncGameState();
     }
 
     public Set<Point> getGoalPoints() {

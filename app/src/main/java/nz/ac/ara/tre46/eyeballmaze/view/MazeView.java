@@ -12,16 +12,17 @@ import android.graphics.Point;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
+import android.graphics.drawable.Drawable;
 
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
+import androidx.appcompat.content.res.AppCompatResources;
 
 import java.util.HashSet;
 import java.util.Set;
 
 import nz.ac.ara.tre46.eyeballmaze.enums.Color;
 import nz.ac.ara.tre46.eyeballmaze.enums.Shape;
-import nz.ac.ara.tre46.eyeballmaze.enums.SquareType;
 import nz.ac.ara.tre46.eyeballmaze.enums.Direction;
 import nz.ac.ara.tre46.eyeballmaze.R;
 
@@ -44,7 +45,8 @@ public class MazeView extends View {
     private Runnable clearFailedRunnable;
 
     private final Path reusablePath = new Path();
-    private final RectF reusableRectF = new RectF();
+//    private final RectF reusableRectF = new RectF();
+    private final RectF reusableGoalRect = new RectF();
 
     private final Set<String> goalKeys = new HashSet<>();
     private Bitmap eyeballBitmap = null;
@@ -53,11 +55,11 @@ public class MazeView extends View {
     private float cellW, cellH;
     private OnCellTapListener tapListener;
 
-    private TypeProvider typeProvider;
     private ColorProvider colorProvider;
     private ShapeProvider shapeProvider;
 
-    private String goalLabel;
+    //    private String goalLabel;
+    private Bitmap goalLabelIcon;
 
     public MazeView(Context context) {
         super(context);
@@ -75,7 +77,21 @@ public class MazeView extends View {
     }
 
     private void init() {
-        goalLabel = getResources().getString(R.string.goal);
+        Drawable drawable = AppCompatResources.getDrawable(getContext(), R.drawable.baseline_flag_24);
+        if (drawable != null) {
+            drawable.setTint(android.graphics.Color.BLACK); // Force black for MazeView
+            Bitmap bmp = Bitmap.createBitmap(
+                    drawable.getIntrinsicWidth(),
+                    drawable.getIntrinsicHeight(),
+                    Bitmap.Config.ARGB_8888
+            );
+            Canvas canvas = new Canvas(bmp);
+            drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+            drawable.draw(canvas);
+            goalLabelIcon = bmp;
+        }
+
+        setContentDescription(getContext().getString(R.string.goal));
 
         linePaint.setStyle(Paint.Style.STROKE);
         linePaint.setStrokeWidth(4);
@@ -184,12 +200,15 @@ public class MazeView extends View {
                     goalTextPaint.setTextAlign(Paint.Align.CENTER);
                     goalTextPaint.setTextSize(cellH * 0.3f); // Adjust size per cell
 
-                    Paint.FontMetrics fontMetrics = goalTextPaint.getFontMetrics();
-                    float textOffset = (fontMetrics.ascent + fontMetrics.descent) / 2f;
+                    if (goalLabelIcon != null) {
+                        float iconSize = cellH * 0.3f;
+                        float iconLeft = left + cellW * 0.02f;
+                        float iconTop = top + cellH * 0.02f;
+                        reusableGoalRect.set(iconLeft, iconTop, iconLeft + iconSize, iconTop + iconSize);
+                        canvas.drawBitmap(goalLabelIcon, null, reusableGoalRect, null);
+//                        canvas.drawText("Goal", cx, cy + iconSize / 2f + 12, goalTextPaint); // Add the text
+                    }
 
-                    float cx = left + cellW / 2f;
-                    float cy = top + cellH / 2f;
-                    canvas.drawText(goalLabel, cx, cy - textOffset, goalTextPaint);
                 }
             }
         }
@@ -364,20 +383,12 @@ public class MazeView extends View {
         void onCellTapped(int row, int col);
     }
 
-    public interface TypeProvider {
-        SquareType getType(int row, int col);
-    }
-
     public interface ColorProvider {
         Color getColor(int row, int col);
     }
 
     public interface ShapeProvider {
         Shape getShape(int row, int col);
-    }
-
-    public void setTypeProvider(TypeProvider provider) {
-        this.typeProvider = provider;
     }
 
     public void setColorProvider(ColorProvider provider) {
