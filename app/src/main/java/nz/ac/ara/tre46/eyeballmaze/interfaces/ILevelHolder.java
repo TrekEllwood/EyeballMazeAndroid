@@ -12,5 +12,7 @@ public interface ILevelHolder {
     public int getLevelCount();
 
     // NEW
-    void loadLevelFromText(String[] strippedLines);
+//    public void loadLevelFromText(String[] strippedLines); // moved to JSON
+
+    public void loadLevelFromJson(String json);
 }

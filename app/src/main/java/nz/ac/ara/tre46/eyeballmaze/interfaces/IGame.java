@@ -61,7 +61,7 @@ public interface IGame {
 
     public int getLevelCount();
 
-    void loadLevelFromText(String[] lines);
+    public void loadLevelFromJson(String json);
 
     public Color getColorAt(int row, int column);
 

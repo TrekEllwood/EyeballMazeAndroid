@@ -8,10 +8,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import nz.ac.ara.tre46.eyeballmaze.enums.Color;
@@ -54,23 +52,27 @@ public class Game implements IGame, IGoalHolder, IEyeballHolder, ILevelHolder, I
     public Game(Context context) {
         this(); // call default constructor to set up dependencies
 
-        String[] levelLines = loadLevelFromRaw(context, R.raw.levels);
-        loadLevelFromText(levelLines);
+        // ADDED for levels from file
+        String json = loadJsonFromRaw(context, R.raw.levels);
+        loadLevelFromJson(json);
     }
 
     // ADDED #2: it now owns responsibility for loading and initialising levels
-    private String[] loadLevelFromRaw(Context ctx, int resId) {
-        List<String> lines = new ArrayList<>();
+    private String loadJsonFromRaw(Context ctx, int resId) {
         try (InputStream is = ctx.getResources().openRawResource(resId);
              BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
+
+            StringBuilder builder = new StringBuilder();
             String line;
             while ((line = reader.readLine()) != null) {
-                lines.add(line.trim());
+                builder.append(line).append("\n"); // preserve formatting
             }
+
+            return builder.toString();
         } catch (IOException e) {
-            Log.e("Game", "Failed to load level data", e);
+            Log.e("Game", "Failed to load level JSON", e);
+            throw new RuntimeException("Could not read JSON level file", e);
         }
-        return lines.toArray(new String[0]);
     }
 
     @Override
@@ -79,27 +81,6 @@ public class Game implements IGame, IGoalHolder, IEyeballHolder, ILevelHolder, I
         // Set the most recently added level as the current level.
         setLevel(levelHolder.getLevelCount() - 1);
     }
-
-//    @Override
-//    public void setLevel(int levelNumber) {
-//        levelHolder.setLevel(levelNumber);
-//        if (levelHolder instanceof LevelHolder) {
-//            currentMaze = ((LevelHolder) levelHolder).getCurrentMaze();
-//        }
-//        if (currentMaze != null) {
-//            int width = getLevelWidth();
-//            int height = getLevelHeight();
-//
-//            squareHolder = new SquareHolder(currentMaze); // ADDED
-//            squareHolder.resetBoard(width, height);
-//
-//            player = new Player(currentMaze.getStartRow(), currentMaze.getStartCol(),
-//                currentMaze.getStartOrientation());
-//
-//            Set<IGoal> mazeGoals = new HashSet<>(currentMaze.getMazeGoals());
-//            goalHolder.setGoals(mazeGoals);
-//        }
-//    }
 
     // CHANGE: So maze does not get overridden by blanks
     @Override
@@ -139,12 +120,13 @@ public class Game implements IGame, IGoalHolder, IEyeballHolder, ILevelHolder, I
     }
 
     @Override
-    public void loadLevelFromText(String[] lines) { // ADDED
-        levelHolder.loadLevelFromText(lines);
-//        setLevel(levelHolder.getLevelCount() - 1);
+    public void loadLevelFromJson(String json) { // ADDED to import levels
+        levelHolder.loadLevelFromJson(json);
+
         if (levelHolder.getLevelCount() == 0) {
-            throw new IllegalStateException("No levels were loaded. Check level file format.");
+            throw new IllegalStateException("No levels were loaded. Check JSON format.");
         }
+
         setLevel(0);
     }
 
