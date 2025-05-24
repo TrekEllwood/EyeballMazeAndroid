@@ -21,8 +21,16 @@ public class EyeballMazeViewModelFactory implements ViewModelProvider.Factory {
     public <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
         if (modelClass.isAssignableFrom(EyeballMazeViewModel.class)) {
             Game game = new Game(context);
-            return (T) new EyeballMazeViewModel(game);
+
+            try {
+                game.loadLevelsFromAssets(context);
+            } catch (RuntimeException e) {
+                throw new RuntimeException("Failed to load levels from assets. Ensure levels.json exists in res/raw.", e);
+            }
+
+            return (T) new EyeballMazeViewModel(context, game);
         }
+
         throw new IllegalArgumentException("Unknown ViewModel class: " + modelClass.getName());
     }
 }

@@ -2,12 +2,12 @@ package nz.ac.ara.tre46.eyeballmaze.models;
 
 import android.content.Context;
 import android.graphics.Point;
-import android.util.Log;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -26,7 +26,6 @@ import nz.ac.ara.tre46.eyeballmaze.interfaces.ISquareHolder;
 import nz.ac.ara.tre46.eyeballmaze.interfaces.IMaze;
 import nz.ac.ara.tre46.eyeballmaze.interfaces.IMoving;
 import nz.ac.ara.tre46.eyeballmaze.interfaces.IPlayer;
-import nz.ac.ara.tre46.eyeballmaze.R;
 
 public class Game implements IGame, IGoalHolder, IEyeballHolder, ILevelHolder, ISquareHolder {
     private final ILevelHolder levelHolder;
@@ -53,13 +52,13 @@ public class Game implements IGame, IGoalHolder, IEyeballHolder, ILevelHolder, I
         this(); // call default constructor to set up dependencies
 
         // ADDED for levels from file
-        String json = loadJsonFromRaw(context, R.raw.levels);
+        String json = loadJsonFromAssets(context, "levels.json");
         loadLevelFromJson(json);
     }
 
     // ADDED #2: it now owns responsibility for loading and initialising levels
-    private String loadJsonFromRaw(Context ctx, int resId) {
-        try (InputStream is = ctx.getResources().openRawResource(resId);
+    private String loadJsonFromAssets(Context context, String filename) {
+        try (InputStream is = context.getAssets().open(filename);
              BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
 
             StringBuilder builder = new StringBuilder();
@@ -70,7 +69,6 @@ public class Game implements IGame, IGoalHolder, IEyeballHolder, ILevelHolder, I
 
             return builder.toString();
         } catch (IOException e) {
-            Log.e("Game", "Failed to load level JSON", e);
             throw new RuntimeException("Could not read JSON level file", e);
         }
     }
@@ -127,7 +125,21 @@ public class Game implements IGame, IGoalHolder, IEyeballHolder, ILevelHolder, I
             throw new IllegalStateException("No levels were loaded. Check JSON format.");
         }
 
-        setLevel(0);
+        setLevel(0); // First time initialise level
+    }
+
+    public void loadLevelsFromAssets(Context context) { // ADDED: for factory to trigger level loading
+        try {
+            InputStream is = context.getAssets().open("levels.json");
+            int size = is.available();
+            byte[] buffer = new byte[size];
+            is.read(buffer);
+            is.close();
+            String json = new String(buffer, StandardCharsets.UTF_8);
+            loadLevelFromJson(json);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to load levels from assets", e);
+        }
     }
 
     public int getCurrentMazeId() { // ADDED

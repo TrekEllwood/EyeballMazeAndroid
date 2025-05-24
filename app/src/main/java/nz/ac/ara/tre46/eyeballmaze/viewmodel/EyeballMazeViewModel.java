@@ -9,8 +9,9 @@ import java.util.Set;
 import java.util.Deque;
 import java.util.ArrayDeque;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Point;
-
 
 import nz.ac.ara.tre46.eyeballmaze.enums.Color;
 import nz.ac.ara.tre46.eyeballmaze.enums.Direction;
@@ -20,6 +21,7 @@ import nz.ac.ara.tre46.eyeballmaze.interfaces.IGame;
 
 public class EyeballMazeViewModel extends ViewModel {
     private final IGame game;
+    private final Context context;
 
     private final MutableLiveData<Integer> rowLiveData = new MutableLiveData<>();
     private final MutableLiveData<Integer> colLiveData = new MutableLiveData<>();
@@ -36,7 +38,8 @@ public class EyeballMazeViewModel extends ViewModel {
     private static final int MAX_UNDO = 10;
     private int currentLevelIndex = 0;
 
-    public EyeballMazeViewModel(IGame gameInstance) {
+    public EyeballMazeViewModel(Context context, IGame gameInstance) {
+        this.context = context.getApplicationContext();
         this.game = gameInstance;
         syncGameState();
     }
@@ -152,12 +155,32 @@ public class EyeballMazeViewModel extends ViewModel {
     }
 
     public void setLevel(int index) {
+        if (index < 0 || index >= game.getLevelCount()) {
+            return;
+        }
+
         if (index == currentLevelIndex) return; // Prevent redundant reload
+
         game.setLevel(index);
         currentLevelIndex = index;
         moveCount.setValue(0);
         resetUndo();
         syncGameState();
+
+        // Persist the level
+        SharedPreferences prefs = context.getSharedPreferences("EyeballMazePrefs", Context.MODE_PRIVATE);
+        prefs.edit().putInt("last_level_index", index).apply();
+    }
+
+    public void initializeLevelFromPreferences() {
+        SharedPreferences prefs = context.getSharedPreferences("EyeballMazePrefs", Context.MODE_PRIVATE);
+        int lastLevel = prefs.getInt("last_level_index", 0);
+
+        if (lastLevel < game.getLevelCount()) {
+            setLevel(lastLevel);
+        } else {
+            setLevel(0);
+        }
     }
 
     public int getMazeIdAt(int index) {

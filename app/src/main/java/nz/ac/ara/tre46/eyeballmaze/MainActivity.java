@@ -102,6 +102,7 @@ public class MainActivity extends AppCompatActivity {
             }
 
             restoreTimerState(savedInstanceState);
+            isMuted = savedInstanceState.getBoolean("is_muted", false);
         }
 
 //        setContentView(R.layout.activity_main); // Only need if using activity_main.xml
@@ -110,13 +111,19 @@ public class MainActivity extends AppCompatActivity {
         winSfx = MediaPlayer.create(this, R.raw.win);
         badMoveSfx = MediaPlayer.create(this, R.raw.bad);
 
+//        applyMuteState();
+
         viewModel = new ViewModelProvider(
                 this,
                 new EyeballMazeViewModelFactory(getApplicationContext())
         ).get(EyeballMazeViewModel.class);
 
+//        if (savedInstanceState == null) {
+//            viewModel.setLevel(0);  // Only on first launch
+//        }
+
         if (savedInstanceState == null) {
-            viewModel.setLevel(0);  // Only on first launch
+            viewModel.initializeLevelFromPreferences();
         }
 
         boolean isLandscape = getResources().getConfiguration().orientation ==
@@ -175,12 +182,6 @@ public class MainActivity extends AppCompatActivity {
         );
         mazeView.setLayoutParams(mazeParams);
         root.addView(mazeView, mazeParams);
-
-//        LinearLayout.LayoutParams mazeParams = new LinearLayout.LayoutParams(
-//                isLandscape ? 0 : LayoutParams.MATCH_PARENT,
-//                isLandscape ? LayoutParams.MATCH_PARENT : 0,
-//                1.0f
-//        );
 
         // Controls container
         LinearLayout controls = new LinearLayout(this);
@@ -254,18 +255,10 @@ public class MainActivity extends AppCompatActivity {
 
         muteBtn.setOnClickListener(v -> {
             isMuted = !isMuted;
-
-            if (isMuted) {
-                resetMuteStateUI();
-            } else {
-                setMuteStateUI();
-            }
-
-            float volume = isMuted ? 0f : 1f;
-            if (moveSfx != null) moveSfx.setVolume(volume, volume);
-            if (winSfx != null) winSfx.setVolume(volume, volume);
-            if (badMoveSfx != null) badMoveSfx.setVolume(volume, volume);
+            applyMuteState();
         });
+
+        applyMuteState();
 
         replayBtn = new Button(this);
         replayBtn.setLayoutParams(new LinearLayout.LayoutParams(
@@ -286,7 +279,6 @@ public class MainActivity extends AppCompatActivity {
                 ViewGroup.LayoutParams.WRAP_CONTENT
         ));
         pauseBtn.setEnabled(false);
-//        pauseBtn.setColorFilter(tint, PorterDuff.Mode.SRC_IN);
         pauseBtn.setBackground(null);
         pauseBtn.setOnClickListener(v -> {
             if (isPaused) {
@@ -631,6 +623,7 @@ public class MainActivity extends AppCompatActivity {
         outState.putBoolean("is_paused", isPaused);
         outState.putLong("paused_time", pausedTime);
         outState.putBoolean("is_solved", isSolved);
+        outState.putBoolean("is_muted", isMuted);
     }
 
     @Override
@@ -811,5 +804,19 @@ public class MainActivity extends AppCompatActivity {
         isPaused = savedInstanceState.getBoolean("is_paused", false);
         pausedTime = savedInstanceState.getLong("paused_time", 0L);
         isSolved = savedInstanceState.getBoolean("is_solved", false);
+    }
+
+    private void applyMuteState() {
+        float volume = isMuted ? 0f : 1f;
+
+        if (moveSfx != null) moveSfx.setVolume(volume, volume);
+        if (winSfx != null) winSfx.setVolume(volume, volume);
+        if (badMoveSfx != null) badMoveSfx.setVolume(volume, volume);
+
+        if (isMuted) {
+            resetMuteStateUI();
+        } else {
+            setMuteStateUI();
+        }
     }
 }
