@@ -24,8 +24,15 @@ import android.widget.TextView;
 import android.graphics.Point;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+
+import androidx.core.graphics.Insets;
+
 import android.widget.Toast;
 
+import com.google.android.flexbox.FlexDirection;
+import com.google.android.flexbox.FlexWrap;
+import com.google.android.flexbox.FlexboxLayout;
+import com.google.android.flexbox.JustifyContent;
 import com.google.android.material.snackbar.Snackbar;
 
 import androidx.annotation.NonNull;
@@ -135,8 +142,8 @@ public class MainActivity extends AppCompatActivity {
         root.setOrientation(isLandscape ? LinearLayout.HORIZONTAL : LinearLayout.VERTICAL);
 
         ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
-            int topInset = isLandscape ? 0 : insets.getInsets(WindowInsetsCompat.Type.systemBars()).top;
-            v.setPadding(0, topInset, 0, 0);
+            Insets sysInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(sysInsets.left, sysInsets.top, sysInsets.right, sysInsets.bottom);
             return insets;
         });
 
@@ -171,17 +178,18 @@ public class MainActivity extends AppCompatActivity {
             viewModel.clickToMoveToward(row, col); // Handles messages
         });
 
-        LinearLayout.LayoutParams mazeParams = new LinearLayout.LayoutParams(
-                isLandscape ? 0 : LayoutParams.MATCH_PARENT,
-                isLandscape ? LayoutParams.MATCH_PARENT : 0,
-                isLandscape ? 0.7f : 1.0f
-        );
-        mazeView.setLayoutParams(mazeParams);
-        root.addView(mazeView, mazeParams);
+//        LinearLayout.LayoutParams mazeParams = new LinearLayout.LayoutParams(
+//                isLandscape ? 0 : LayoutParams.MATCH_PARENT,
+//                isLandscape ? LayoutParams.MATCH_PARENT : 0,
+//                isLandscape ? mazeWeight : 1.0f
+//        );
+//        mazeView.setLayoutParams(mazeParams);
+//        root.addView(mazeView, mazeParams);
 
         // Controls container
         LinearLayout controls = new LinearLayout(this);
         controls.setOrientation(isLandscape ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL);
+        controls.setGravity(Gravity.CENTER_VERTICAL);
 
         // Spinner row: label + spinner side by side
         LinearLayout spinnerRow = new LinearLayout(this);
@@ -320,38 +328,80 @@ public class MainActivity extends AppCompatActivity {
                     LayoutParams.WRAP_CONTENT
             ));
 
-            ScrollView scrollView = new ScrollView(this);
-            scrollView.setLayoutParams(new LinearLayout.LayoutParams(
-                    LayoutParams.MATCH_PARENT,
-                    LayoutParams.MATCH_PARENT
-            ));
+//            ScrollView scrollView = new ScrollView(this);
+//            scrollView.setLayoutParams(new LinearLayout.LayoutParams(
+//                    LayoutParams.MATCH_PARENT,
+//                    LayoutParams.MATCH_PARENT
+//            ));
+//
+//            LinearLayout verticalLayout = new LinearLayout(this);
+//            verticalLayout.setOrientation(LinearLayout.VERTICAL);
+//            verticalLayout.setPadding(16, 16, 16, 16);
+//            verticalLayout.setGravity(Gravity.CENTER_HORIZONTAL);
+//            scrollView.addView(verticalLayout);
+//
+//            verticalLayout.addView(titleTextView);
+//            verticalLayout.addView(goalsStatusTextView);
+//            verticalLayout.addView(moveCounterTextView);
+//            verticalLayout.addView(timerTextView);
+//
+//            LinearLayout row1 = new LinearLayout(this);
+//            row1.setOrientation(LinearLayout.HORIZONTAL);
+//            row1.setGravity(Gravity.CENTER_HORIZONTAL);
+//            row1.setPadding(0, 8, 0, 8);
+//            row1.addView(resetBtn);
+//            row1.addView(undoBtn);
+//            verticalLayout.addView(row1);
+//
+//            LinearLayout row2 = new LinearLayout(this);
+//            row2.setOrientation(LinearLayout.HORIZONTAL);
+//            row2.setGravity(Gravity.CENTER_HORIZONTAL);
+//            row2.setPadding(0, 8, 0, 8);
+//            row2.addView(replayBtn);
+//            verticalLayout.addView(row2);
+//
+//            LinearLayout row3 = new LinearLayout(this);
+//            row3.setOrientation(LinearLayout.HORIZONTAL);
+//            row3.setGravity(Gravity.CENTER_HORIZONTAL);
+//            row3.setPadding(0, 8, 0, 0);
+//            row3.addView(pauseBtn);
+//            row3.addView(muteBtn);
+//            verticalLayout.addView(row3);
+//
+//            verticalLayout.addView(spinnerRow);
+//
+//            controls.addView(scrollView);
 
+            // Create vertical layout for controls
             LinearLayout verticalLayout = new LinearLayout(this);
             verticalLayout.setOrientation(LinearLayout.VERTICAL);
             verticalLayout.setPadding(16, 16, 16, 16);
             verticalLayout.setGravity(Gravity.CENTER_HORIZONTAL);
-            scrollView.addView(verticalLayout);
 
             verticalLayout.addView(titleTextView);
             verticalLayout.addView(goalsStatusTextView);
             verticalLayout.addView(moveCounterTextView);
             verticalLayout.addView(timerTextView);
 
-            LinearLayout row1 = new LinearLayout(this);
-            row1.setOrientation(LinearLayout.HORIZONTAL);
-            row1.setGravity(Gravity.CENTER_HORIZONTAL);
+            FlexboxLayout row1 = new FlexboxLayout(this);
+            row1.setFlexDirection(FlexDirection.ROW);
+            row1.setFlexWrap(FlexWrap.WRAP);
+            row1.setJustifyContent(JustifyContent.CENTER);
             row1.setPadding(0, 8, 0, 8);
+
+            FlexboxLayout.LayoutParams btnParams = new FlexboxLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+            );
+            btnParams.setMargins(8, 0, 8, 0);
+
+            resetBtn.setLayoutParams(btnParams);
+            undoBtn.setLayoutParams(btnParams);
+
             row1.addView(resetBtn);
             row1.addView(undoBtn);
+            row1.addView(replayBtn);
             verticalLayout.addView(row1);
-
-            LinearLayout row2 = new LinearLayout(this);
-            row2.setOrientation(LinearLayout.HORIZONTAL);
-            row2.setGravity(Gravity.CENTER_HORIZONTAL);
-            row2.setPadding(0, 8, 0, 8);
-            row2.addView(replayBtn);
-//            row2.addView(pauseBtn);
-            verticalLayout.addView(row2);
 
             LinearLayout row3 = new LinearLayout(this);
             row3.setOrientation(LinearLayout.HORIZONTAL);
@@ -363,7 +413,41 @@ public class MainActivity extends AppCompatActivity {
 
             verticalLayout.addView(spinnerRow);
 
-            controls.addView(scrollView);
+            // Wrap verticalLayout in ScrollView
+            ScrollView scrollView = new ScrollView(this);
+            scrollView.setLayoutParams(new ScrollView.LayoutParams(
+                    LayoutParams.MATCH_PARENT,
+                    LayoutParams.WRAP_CONTENT
+            ));
+            scrollView.addView(verticalLayout);
+
+            // Wrap ScrollView in FrameLayout to center vertically
+            FrameLayout scrollWrapper = new FrameLayout(this);
+            scrollWrapper.setLayoutParams(new LinearLayout.LayoutParams(
+                    LayoutParams.MATCH_PARENT,
+                    LayoutParams.MATCH_PARENT
+            ));
+
+            // Apply system insets to avoid camera
+            ViewCompat.setOnApplyWindowInsetsListener(scrollWrapper, (v, insets) -> {
+                Insets sysInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+                v.setPadding(sysInsets.left, sysInsets.top, sysInsets.right, sysInsets.bottom);
+                return insets;
+            });
+
+            // Add the ScrollView inside with vertical centering
+            FrameLayout.LayoutParams centeredParams = new FrameLayout.LayoutParams(
+                    LayoutParams.MATCH_PARENT,
+                    LayoutParams.WRAP_CONTENT,
+                    Gravity.CENTER_VERTICAL
+            );
+            scrollWrapper.addView(scrollView, centeredParams);
+
+            // Add to controls
+            controls.addView(scrollWrapper, new LinearLayout.LayoutParams(
+                    LayoutParams.MATCH_PARENT,
+                    LayoutParams.MATCH_PARENT
+            ));
         } else {
             ScrollView scrollView = new ScrollView(this);
             scrollView.setLayoutParams(new LinearLayout.LayoutParams(
@@ -405,10 +489,22 @@ public class MainActivity extends AppCompatActivity {
             controls.addView(scrollView);
         }
 
+        float mazeWeight = 0.5f;
+        float controlsWeight = 0.5f;
+
+        // 1. Add mazeView using weight
+        LinearLayout.LayoutParams mazeParams = new LinearLayout.LayoutParams(
+                isLandscape ? 0 : LayoutParams.MATCH_PARENT,
+                isLandscape ? LayoutParams.MATCH_PARENT : 0,
+                isLandscape ? mazeWeight : 1.0f
+        );
+        root.addView(mazeView, mazeParams);
+
+        // 2. Add controls using weight
         LinearLayout.LayoutParams controlsParams = new LinearLayout.LayoutParams(
                 isLandscape ? 0 : LayoutParams.MATCH_PARENT,
                 isLandscape ? LayoutParams.MATCH_PARENT : LayoutParams.WRAP_CONTENT,
-                0.4f // how much screen to take up 40%
+                isLandscape ? controlsWeight : 0f
         );
         root.addView(controls, controlsParams);
 
@@ -422,24 +518,27 @@ public class MainActivity extends AppCompatActivity {
 
         viewModel.getMoveCount().observe(this, count -> moveCounterTextView.setText(getString(R.string.moves_format, count)));
 
+        // 3. Set this layout as content view
         setContentView(root);
         syncMazeViewFromViewModel();
 
+        // 4. Force maze to be square based on actual height (in landscape)
         mazeView.post(() -> {
-            int screenWidth = root.getWidth();
-            int screenHeight = root.getHeight();
-
             if (isLandscape) {
-                // Use full height, and share width via weight
-                int size = Math.min(screenHeight, (int) (screenWidth * 0.6)); // 60% width max
+                int squareSize = mazeView.getHeight();  // determined by layout weight
                 ViewGroup.LayoutParams params = mazeView.getLayoutParams();
-                params.width = size;
-                params.height = size;
+                // Force square shape
+                params.width = squareSize;
+                params.height = squareSize;
                 mazeView.setLayoutParams(params);
             } else {
+                // In portrait: fit based on available space below controls
+                int screenHeight = root.getHeight();
                 int controlsHeight = controls.getHeight();
                 int availableHeight = screenHeight - controlsHeight;
+                int screenWidth = root.getWidth();
                 int size = Math.min(screenWidth, availableHeight);
+
                 ViewGroup.LayoutParams params = mazeView.getLayoutParams();
                 params.width = size;
                 params.height = size;
