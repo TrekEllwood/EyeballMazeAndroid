@@ -1,5 +1,20 @@
 [
   {
+    "id": 0,
+    "startRow": 2,
+    "startCol": 1,
+    "startDir": "UP",
+    "grid": [
+      ["BLUE_DIAMOND", "BLANK_BLANK", "BLUE_FLOWER", "GREEN_FLOWER"],
+      ["RED_CROSS", "RED_STAR", "YELLOW_DIAMOND", "BLANK_BLANK"],
+      ["GREEN_CROSS", "RED_STAR", "BLUE_STAR", "RED_FLOWER"],
+      ["BLANK_BLANK", "YELLOW_STAR", "BLANK_BLANK", "BLANK_BLANK"]
+    ],
+    "goals": [
+      { "row": 0, "col": 2 }
+    ]
+  },
+  {
     "id": 1,
     "startRow": 5,
     "startCol": 1,
@@ -11,6 +26,92 @@
       ["RED_FLOWER", "BLUE_FLOWER", "RED_STAR", "GREEN_FLOWER"],
       ["BLUE_STAR", "RED_DIAMOND", "BLUE_FLOWER", "BLUE_DIAMOND"],
       ["BLANK_BLANK", "BLUE_DIAMOND", "BLANK_BLANK", "BLANK_BLANK"]
+    ],
+    "goals": [
+      { "row": 0, "col": 2 }
+    ]
+  },
+  {
+    "id": 2,
+    "startRow": 5,
+    "startCol": 1,
+    "startDir": "UP",
+    "grid": [
+      ["BLANK_BLANK", "BLANK_BLANK", "RED_FLOWER", "BLANK_BLANK"],
+      ["BLUE_CROSS", "BLUE_FLOWER", "BLUE_DIAMOND", "GREEN_CROSS"],
+      ["GREEN_FLOWER", "RED_STAR", "GREEN_STAR", "YELLOW_FLOWER"],
+      ["RED_FLOWER", "GREEN_DIAMOND", "RED_STAR", "YELLOW_STAR"],
+      ["GREEN_CROSS", "RED_DIAMOND", "BLUE_FLOWER", "GREEN_DIAMOND"],
+      ["BLANK_BLANK", "BLUE_DIAMOND", "BLANK_BLANK", "BLANK_BLANK"]
+    ],
+    "goals": [
+      { "row": 0, "col": 2 }
+    ]
+  },
+  {
+    "id": 3,
+    "startRow": 5,
+    "startCol": 1,
+    "startDir": "UP",
+    "grid": [
+      ["BLANK_BLANK", "BLANK_BLANK", "BLANK_BLANK", "RED_CROSS", "BLANK_BLANK"],
+      ["RED_CROSS", "GREEN_DIAMOND", "BLUE_CROSS", "GREEN_STAR", "BLUE_FLOWER"],
+      ["GREEN_FLOWER", "RED_DIAMOND", "GREEN_DIAMOND", "YELLOW_STAR", "BLUE_STAR"],
+      ["GREEN_DIAMOND", "YELLOW_DIAMOND", "GREEN_CROSS", "RED_STAR", "YELLOW_CROSS"],
+      ["RED_FLOWER", "YELLOW_CROSS", "BLUE_FLOWER", "GREEN_CROSS", "YELLOW_STAR"],
+      ["BLANK_BLANK", "BLUE_DIAMOND", "BLANK_BLANK", "BLANK_BLANK", "BLANK_BLANK"]
+    ],
+    "goals": [
+      { "row": 0, "col": 3 }
+    ]
+  },
+  {
+    "id": 4,
+    "startRow": 6,
+    "startCol": 1,
+    "startDir": "UP",
+    "grid": [
+      ["BLANK_BLANK", "BLANK_BLANK", "BLANK_BLANK", "GREEN_CROSS", "BLANK_BLANK"],
+      ["RED_DIAMOND", "GREEN_FLOWER", "RED_FLOWER", "BLUE_STAR", "BLUE_DIAMOND"],
+      ["RED_STAR", "BLUE_FLOWER", "GREEN_STAR", "BLUE_CROSS", "GREEN_DIAMOND"],
+      ["BLANK_BLANK", "BLANK_BLANK", "BLUE_STAR", "BLANK_BLANK", "BLANK_BLANK"],
+      ["GREEN_CROSS", "YELLOW_STAR", "GREEN_FLOWER", "GREEN_STAR", "RED_CROSS"],
+      ["RED_CROSS", "GREEN_STAR", "BLUE_CROSS", "GREEN_DIAMOND", "GREEN_CROSS"],
+      ["BLANK_BLANK", "YELLOW_DIAMOND", "BLANK_BLANK", "BLANK_BLANK", "BLANK_BLANK"]
+    ],
+    "goals": [
+      { "row": 0, "col": 3 }
+    ]
+  },
+  {
+    "id": 5,
+    "startRow": 5,
+    "startCol": 1,
+    "startDir": "UP",
+    "grid": [
+      ["BLANK_BLANK", "BLANK_BLANK", "RED_STAR", "BLANK_BLANK"],
+      ["RED_DIAMOND", "RED_FLOWER", "YELLOW_FLOWER", "YELLOW_CROSS"],
+      ["GREEN_FLOWER", "YELLOW_DIAMOND", "BLUE_DIAMOND", "GREEN_STAR"],
+      ["GREEN_STAR", "GREEN_DIAMOND", "BLUE_STAR", "GREEN_DIAMOND"],
+      ["YELLOW_DIAMOND", "RED_DIAMOND", "YELLOW_CROSS", "BLUE_CROSS"],
+      ["BLANK_BLANK", "YELLOW_STAR", "BLANK_BLANK", "BLANK_BLANK"]
+    ],
+    "goals": [
+      { "row": 0, "col": 2 }
+    ]
+  },
+  {
+    "id": 6,
+    "startRow": 5,
+    "startCol": 1,
+    "startDir": "UP",
+    "grid": [
+      ["BLANK_BLANK", "BLANK_BLANK", "YELLOW_STAR", "BLANK_BLANK"],
+      ["RED_DIAMOND", "BLUE_CROSS", "RED_CROSS", "GREEN_DIAMOND"],
+      ["BLUE_FLOWER", "RED_FLOWER", "YELLOW_DIAMOND", "BLUE_CROSS"],
+      ["BLUE_STAR", "BLUE_FLOWER", "GREEN_CROSS", "GREEN_FLOWER"],
+      ["RED_FLOWER", "GREEN_CROSS", "GREEN_DIAMOND", "RED_CROSS"],
+      ["BLANK_BLANK", "BLUE_FLOWER", "BLANK_BLANK", "BLANK_BLANK"]
     ],
     "goals": [
       { "row": 0, "col": 2 }
@@ -32,6 +133,129 @@
     "goals": [
       { "row": 0, "col": 1 },
       { "row": 0, "col": 3 }
+    ]
+  },
+  {
+    "id": 8,
+    "startRow": 5,
+    "startCol": 1,
+    "startDir": "UP",
+    "grid": [
+      ["BLANK_BLANK", "BLANK_BLANK", "GREEN_CROSS", "BLANK_BLANK", "BLANK_BLANK", "BLANK_BLANK"],
+      ["RED_CROSS", "RED_STAR", "YELLOW_DIAMOND", "BLUE_DIAMOND", "RED_DIAMOND", "YELLOW_STAR"],
+      ["YELLOW_STAR", "YELLOW_DIAMOND", "RED_STAR", "GREEN_CROSS", "GREEN_STAR", "GREEN_FLOWER"],
+      ["RED_FLOWER", "RED_CROSS", "GREEN_STAR", "BLUE_FLOWER", "YELLOW_DIAMOND", "YELLOW_CROSS"],
+      ["GREEN_STAR", "RED_DIAMOND", "YELLOW_CROSS", "YELLOW_DIAMOND", "GREEN_FLOWER", "BLUE_FLOWER"],
+      ["BLANK_BLANK", "YELLOW_FLOWER", "BLANK_BLANK", "BLANK_BLANK", "BLANK_BLANK", "BLANK_BLANK"]
+    ],
+    "goals": [
+      { "row": 0, "col": 2 }
+    ]
+  },
+  {
+    "id": 9,
+    "startRow": 5,
+    "startCol": 0,
+    "startDir": "UP",
+    "grid": [
+      ["BLUE_FLOWER", "YELLOW_STAR", "GREEN_FLOWER", "BLUE_STAR", "YELLOW_FLOWER"],
+      ["RED_DIAMOND", "YELLOW_CROSS", "RED_CROSS", "BLUE_CROSS", "GREEN_DIAMOND"],
+      ["RED_STAR", "BLANK_BLANK", "RED_STAR", "BLANK_BLANK", "GREEN_STAR"],
+      ["YELLOW_DIAMOND", "GREEN_FLOWER", "GREEN_STAR", "RED_STAR", "BLUE_DIAMOND"],
+      ["YELLOW_STAR", "RED_FLOWER", "BLUE_CROSS", "RED_DIAMOND", "YELLOW_CROSS"],
+      ["RED_CROSS", "BLANK_BLANK", "BLANK_BLANK", "BLANK_BLANK", "BLANK_BLANK"]
+    ],
+    "goals": [
+      { "row": 2, "col": 0 },
+      { "row": 2, "col": 2 },
+      { "row": 2, "col": 4 }
+    ]
+  },
+  {
+    "id": 10,
+    "startRow": 7,
+    "startCol": 1,
+    "startDir": "UP",
+    "grid": [
+      ["RED_DIAMOND", "YELLOW_STAR", "BLUE_FLOWER", "RED_CROSS", "RED_FLOWER", "BLUE_CROSS", "BLANK_BLANK"],
+      ["YELLOW_DIAMOND", "BLUE_FLOWER", "YELLOW_STAR", "BLUE_STAR", "BLUE_CROSS", "YELLOW_STAR", "BLANK_BLANK"],
+      ["RED_FLOWER", "BLUE_STAR", "BLUE_DIAMOND", "GREEN_FLOWER", "RED_CROSS", "YELLOW_DIAMOND", "BLANK_BLANK"],
+      ["BLANK_BLANK", "BLANK_BLANK", "BLANK_BLANK","RED_DIAMOND", "BLANK_BLANK", "BLANK_BLANK", "BLANK_BLANK"],
+      ["BLUE_CROSS", "RED_DIAMOND", "GREEN_FLOWER", "GREEN_STAR", "YELLOW_CROSS", "RED_DIAMOND", "GREEN_STAR"],
+      ["YELLOW_CROSS", "BLUE_STAR", "YELLOW_DIAMOND", "YELLOW_FLOWER", "RED_FLOWER", "GREEN_STAR", "BLUE_CROSS"],
+      ["RED_CROSS", "GREEN_DIAMOND", "BLUE_FLOWER", "YELLOW_DIAMOND", "RED_CROSS", "YELLOW_DIAMOND", "BLUE_STAR"],
+      ["BLANK_BLANK", "YELLOW_STAR", "BLANK_BLANK", "BLANK_BLANK", "BLANK_BLANK", "BLANK_BLANK", "BLANK_BLANK"]
+    ],
+    "goals": [
+      { "row": 1, "col": 2 },
+      { "row": 1, "col": 4 },
+      { "row": 3, "col": 3 },
+      { "row": 5, "col": 2 },
+      { "row": 5, "col": 4 }
+    ]
+  },
+  {
+    "id": 11,
+    "startRow": 7,
+    "startCol": 1,
+    "startDir": "UP",
+    "grid": [
+      ["GREEN_STAR", "RED_FLOWER", "GREEN_CROSS", "BLANK_BLANK", "YELLOW_STAR", "YELLOW_FLOWER", "BLUE_STAR"],
+      ["RED_CROSS", "YELLOW_STAR", "YELLOW_DIAMOND", "BLANK_BLANK", "GREEN_DIAMOND", "BLUE_STAR", "YELLOW_FLOWER"],
+      ["RED_FLOWER", "RED_DIAMOND", "BLUE_STAR", "BLANK_BLANK", "BLUE_FLOWER", "BLUE_CROSS", "YELLOW_DIAMOND"],
+      ["GREEN_DIAMOND", "RED_CROSS", "YELLOW_FLOWER", "BLUE_STAR", "RED_FLOWER", "YELLOW_DIAMOND", "GREEN_STAR"],
+      ["BLUE_FLOWER", "BLUE_CROSS", "RED_DIAMOND", "BLANK_BLANK", "RED_CROSS", "GREEN_FLOWER", "YELLOW_CROSS"],
+      ["RED_DIAMOND", "YELLOW_FLOWER", "YELLOW_STAR", "BLANK_BLANK", "RED_DIAMOND", "RED_CROSS", "BLUE_FLOWER"],
+      ["GREEN_CROSS", "RED_FLOWER", "BLUE_CROSS", "BLANK_BLANK", "GREEN_STAR", "YELLOW_CROSS", "RED_STAR"],
+      ["BLANK_BLANK", "GREEN_DIAMOND", "BLANK_BLANK", "BLANK_BLANK", "BLANK_BLANK", "GREEN_STAR", "BLANK_BLANK"]
+    ],
+    "goals": [
+      { "row": 7, "col": 5 }
+    ]
+  },
+  {
+    "id": 12,
+    "startRow": 7,
+    "startCol": 3,
+    "startDir": "UP",
+    "grid": [
+      ["YELLOW_STAR", "BLUE_FLOWER", "GREEN_DIAMOND", "RED_STAR", "GREEN_STAR", "PURPLE_LIGHTNING", "RED_CROSS"],
+      ["GREEN_DIAMOND", "RED_CROSS", "BLUE_FLOWER", "PURPLE_LIGHTNING", "YELLOW_STAR", "RED_CROSS", "GREEN_STAR"],
+      ["PURPLE_LIGHTNING", "YELLOW_STAR", "BLUE_DIAMOND", "BLUE_CROSS", "BLUE_DIAMOND", "GREEN_STAR", "YELLOW_FLOWER"],
+      ["RED_STAR", "GREEN_DIAMOND", "YELLOW_FLOWER", "BLUE_DIAMOND", "PURPLE_LIGHTNING", "GREEN_DIAMOND", "YELLOW_CROSS"],
+      ["GREEN_STAR", "YELLOW_CROSS", "RED_DIAMOND", "YELLOW_FLOWER", "BLUE_DIAMOND", "YELLOW_STAR", "PURPLE_LIGHTNING"],
+      ["BLUE_DIAMOND", "RED_FLOWER", "PURPLE_LIGHTNING", "RED_CROSS", "YELLOW_STAR", "BLUE_CROSS", "GREEN_DIAMOND"],
+      ["YELLOW_CROSS", "PURPLE_LIGHTNING", "GREEN_STAR", "GREEN_DIAMOND", "RED_STAR", "GREEN_FLOWER", "BLUE_CROSS"],
+      ["BLANK_BLANK", "BLANK_BLANK", "BLANK_BLANK", "GREEN_STAR", "BLANK_BLANK", "BLANK_BLANK", "BLANK_BLANK"]
+    ],
+    "goals": [
+      { "row": 3, "col": 0 },
+      { "row": 3, "col": 6 },
+      { "row": 6, "col": 3 }
+    ]
+  },
+  {
+    "id": 13,
+    "startRow": 7,
+    "startCol": 1,
+    "startDir": "UP",
+    "grid": [
+      ["BLUE_FLOWER", "RED_DIAMOND", "PURPLE_LIGHTNING", "YELLOW_CROSS", "PURPLE_LIGHTNING", "GREEN_STAR", "BLUE_FLOWER"],
+      ["GREEN_STAR", "YELLOW_FLOWER", "YELLOW_STAR", "RED_CROSS", "BLUE_CROSS", "RED_FLOWER", "GREEN_DIAMOND"],
+      ["YELLOW_CROSS", "RED_STAR", "GREEN_CROSS", "GREEN_STAR", "GREEN_DIAMOND", "PURPLE_LIGHTNING", "BLUE_STAR"],
+      ["GREEN_STAR", "YELLOW_FLOWER", "RED_STAR", "BLUE_DIAMOND", "YELLOW_DIAMOND", "PURPLE_LIGHTNING", "BLUE_CROSS"],
+      ["YELLOW_CROSS", "RED_STAR", "GREEN_FLOWER", "PURPLE_LIGHTNING", "YELLOW_FLOWER", "BLUE_STAR", "GREEN_DIAMOND"],
+      ["RED_DIAMOND", "GREEN_FLOWER", "YELLOW_STAR", "BLUE_DIAMOND", "BLUE_STAR", "YELLOW_FLOWER", "RED_CROSS"],
+      ["RED_FLOWER", "BLUE_DIAMOND", "GREEN_CROSS", "YELLOW_DIAMOND", "RED_CROSS", "GREEN_DIAMOND", "BLUE_FLOWER"],
+      ["BLANK_BLANK", "BLUE_CROSS", "BLANK_BLANK", "BLANK_BLANK", "BLANK_BLANK", "BLANK_BLANK", "BLANK_BLANK"]
+    ],
+    "goals": [
+      { "row": 0, "col": 0 },
+      { "row": 2, "col": 2 },
+      { "row": 2, "col": 4 },
+      { "row": 3, "col": 0 },
+      { "row": 4, "col": 2 },
+      { "row": 5, "col": 5 }
     ]
   }
 ]

@@ -118,10 +118,6 @@ public class MainActivity extends AppCompatActivity {
                 new EyeballMazeViewModelFactory(getApplicationContext())
         ).get(EyeballMazeViewModel.class);
 
-//        if (savedInstanceState == null) {
-//            viewModel.setLevel(0);  // Only on first launch
-//        }
-
         if (savedInstanceState == null) {
             viewModel.initializeLevelFromPreferences();
         }

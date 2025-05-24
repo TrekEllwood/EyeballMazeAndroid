@@ -2,7 +2,6 @@ package nz.ac.ara.tre46.eyeballmaze.models;
 
 import java.util.ArrayList;
 import java.util.List;
-import android.util.Log;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -12,6 +11,7 @@ import java.lang.reflect.Type;
 import nz.ac.ara.tre46.eyeballmaze.enums.Color;
 import nz.ac.ara.tre46.eyeballmaze.enums.Direction;
 import nz.ac.ara.tre46.eyeballmaze.enums.Shape;
+import nz.ac.ara.tre46.eyeballmaze.exceptions.LevelLoadException;
 import nz.ac.ara.tre46.eyeballmaze.interfaces.IGoal;
 import nz.ac.ara.tre46.eyeballmaze.interfaces.ILevelHolder;
 import nz.ac.ara.tre46.eyeballmaze.interfaces.IMaze;
@@ -89,120 +89,6 @@ public class LevelHolder implements ILevelHolder {
 		return null;
 	}
 
-//	/**
-//	 * Parses stripped level text (no comments) and adds a new Maze.
-//	 * Format:
-//	 *   lines[0] = "ID,startRow,startCol,startDir,startSquare"
-//	 *   lines[1..H] = grid rows of "COLOR_SHAPE" tokens
-//	 *   lines[last] = "goalRow,goalCol"
-//	 */
-//	@Override
-//	public void loadLevelFromText(String[] lines) {
-//		levels.clear();
-//
-//		List<String> currentMaze = new ArrayList<>();
-//		for (String line : lines) {
-//			if (line.trim().isEmpty() && !currentMaze.isEmpty()) {
-//				addMazeFromLines(currentMaze);
-//				currentMaze.clear();
-//			} else if (!line.trim().startsWith("#")) {
-//				currentMaze.add(line.trim());
-//			}
-//		}
-//		if (!currentMaze.isEmpty()) {
-//			addMazeFromLines(currentMaze);
-//		}
-//
-//		if (!levels.isEmpty()) {
-//			currentLevel = levels.get(0);
-//		}
-//	}
-//
-//	private void addMazeFromLines(List<String> lines) {
-//		if (lines.size() < 3) {
-//			Log.e("LevelHolder", "Maze block too small, skipping.");
-//			return;
-//		}
-//
-//		try {
-//			Log.d("LevelHolder", "Parsing maze with " + lines.size() + " lines");
-//			Log.d("LevelHolder", "Header: " + lines.get(0));
-//
-//			String[] hdr = lines.get(0).split(",", 5);
-//			if (hdr.length < 4) {
-//				Log.e("LevelHolder", "Invalid header: " + lines.get(0));
-//				return;
-//			}
-//
-//			int mazeId     = Integer.parseInt(hdr[0]);
-//			int startRow   = Integer.parseInt(hdr[1]);
-//			int startCol   = Integer.parseInt(hdr[2]);
-//			Direction dir  = parseDirection(hdr[3]);
-//
-//			// Detect goal lines at the end (must be two integers)
-//			int goalStart = lines.size();
-//			for (int i = lines.size() - 1; i > 0; i--) {
-//				String[] parts = lines.get(i).split(",");
-//				if (parts.length == 2 && parts[0].trim().matches("\\d+") && parts[1].trim().matches("\\d+")) {
-//					goalStart = i;
-//				} else {
-//					break;
-//				}
-//			}
-//
-////			int gridEnd = (goalStart == -1) ? lines.size() : goalStart - 1;
-//			int H = goalStart - 1;
-//			if (H <= 0) {
-//				Log.e("LevelHolder", "Invalid grid dimensions.");
-//				return;
-//			}
-//			String[] firstRow = lines.get(1).split(",");
-//			int W = firstRow.length;
-//
-//			Square[][] boardData = new Square[H][W];
-//
-//			for (int r = 0; r < H; r++) {
-//				String[] tokens = lines.get(1 + r).split(",");
-//				for (int c = 0; c < W; c++) {
-//					String tok = tokens[c].trim();
-//					if (tok.equals("BLANK_BLANK")) {
-//						boardData[r][c] = new BlankSquare();
-//					} else {
-//						String[] parts = tok.split("_", 2);
-//						Color color = Color.valueOf(parts[0].trim().toUpperCase());
-//						Shape shape = Shape.valueOf(parts[1].trim().toUpperCase());
-//						boardData[r][c] = new PlayableSquare(color, shape);
-//					}
-//				}
-//			}
-//
-//			List<IGoal> mazeGoals = new ArrayList<>();
-//			for (int i = goalStart; i < lines.size(); i++) {
-//				String[] g = lines.get(i).split(",");
-//				int goalRow = Integer.parseInt(g[0].trim());
-//				int goalCol = Integer.parseInt(g[1].trim());
-//				mazeGoals.add(new Goal(goalRow, goalCol));
-//			}
-//
-//			Maze maze = new Maze(mazeId, startRow, startCol, dir, mazeGoals.size(), boardData, mazeGoals);
-//			levels.add(maze);
-//			Log.d("LevelHolder", "Maze " + mazeId + " added. Total levels: " + levels.size());
-//
-//		} catch (Exception e) {
-//			Log.e("LevelHolder", "Failed to parse maze: " + e.getMessage(), e);
-//		}
-//	}
-//
-//	private Direction parseDirection(String code) {
-//        return switch (code.toLowerCase()) {
-//            case "u" -> Direction.UP;
-//            case "d" -> Direction.DOWN;
-//            case "l" -> Direction.LEFT;
-//            case "r" -> Direction.RIGHT;
-//            default -> throw new IllegalArgumentException("Invalid dir: " + code);
-//        };
-//	}
-
 	/**
 	 * Loads one or more levels from a JSON string and adds them to the level list.
 	 */
@@ -222,14 +108,25 @@ public class LevelHolder implements ILevelHolder {
 				currentLevel = levels.get(0);
 			}
 		} catch (Exception e) {
-			Log.e("LevelHolder", "Failed to load JSON levels: " + e.getMessage(), e);
+			throw new LevelLoadException("Failed to load JSON levels", e); // ADDED: custom exceptions
 		}
 	}
 
 	private void addMazeFromJsonLevel(JsonLevel jsonLevel) {
 		try {
+			if (jsonLevel.grid == null || jsonLevel.grid.isEmpty()) {
+				throw new LevelLoadException("Grid is null or empty in level: " + jsonLevel.id, null);
+			}
+
 			int H = jsonLevel.grid.size();
 			int W = jsonLevel.grid.get(0).size();
+
+			for (int r = 0; r < H; r++) {
+				if (jsonLevel.grid.get(r).size() != W) {
+					throw new LevelLoadException("Inconsistent row size at row " + r + " in level: " + jsonLevel.id, null);
+				}
+			}
+
 			Square[][] boardData = new Square[H][W];
 
 			for (int r = 0; r < H; r++) {
@@ -238,15 +135,27 @@ public class LevelHolder implements ILevelHolder {
 					if (token.equals("BLANK_BLANK")) {
 						boardData[r][c] = new BlankSquare();
 					} else {
+						if (!token.contains("_")) {
+							throw new LevelLoadException("Invalid token format '" + token + "' at (" + r + "," + c + ")", null);
+						}
 						String[] parts = token.split("_", 2);
-						Color color = Color.valueOf(parts[0].trim().toUpperCase());
-						Shape shape = Shape.valueOf(parts[1].trim().toUpperCase());
-						boardData[r][c] = new PlayableSquare(color, shape);
+						try {
+							Color color = Color.valueOf(parts[0].trim().toUpperCase());
+							Shape shape = Shape.valueOf(parts[1].trim().toUpperCase());
+							boardData[r][c] = new PlayableSquare(color, shape);
+						} catch (IllegalArgumentException e) {
+							throw new LevelLoadException("Invalid color or shape in token '" + token + "' at (" + r + "," + c + ")", e);
+						}
 					}
 				}
 			}
 
-			Direction dir = Direction.valueOf(jsonLevel.startDir.toUpperCase());
+			Direction dir;
+			try {
+				dir = Direction.valueOf(jsonLevel.startDir.toUpperCase());
+			} catch (IllegalArgumentException e) {
+				throw new LevelLoadException("Invalid direction: " + jsonLevel.startDir + " in level: " + jsonLevel.id, e);
+			}
 
 			List<IGoal> mazeGoals = new ArrayList<>();
 			for (GoalData g : jsonLevel.goals) {
@@ -263,9 +172,10 @@ public class LevelHolder implements ILevelHolder {
 					mazeGoals
 			);
 			levels.add(maze);
-			Log.d("LevelHolder", "Maze " + jsonLevel.id + " loaded.");
+		} catch (LevelLoadException e) {
+			throw e; // rethrow if already custom
 		} catch (Exception e) {
-			Log.e("LevelHolder", "Error parsing maze: " + e.getMessage(), e);
+			throw new LevelLoadException("Unexpected error while parsing level: " + jsonLevel.id, e);
 		}
 	}
 }

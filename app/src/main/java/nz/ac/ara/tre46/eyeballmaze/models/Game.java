@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Point;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -129,14 +130,18 @@ public class Game implements IGame, IGoalHolder, IEyeballHolder, ILevelHolder, I
     }
 
     public void loadLevelsFromAssets(Context context) { // ADDED: for factory to trigger level loading
-        try {
-            InputStream is = context.getAssets().open("levels.json");
-            int size = is.available();
-            byte[] buffer = new byte[size];
-            is.read(buffer);
-            is.close();
-            String json = new String(buffer, StandardCharsets.UTF_8);
+        try (InputStream is = context.getAssets().open("levels.json");
+             ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+
+            byte[] buffer = new byte[1024];
+            int bytesRead;
+            while ((bytesRead = is.read(buffer)) != -1) {
+                baos.write(buffer, 0, bytesRead);
+            }
+
+            String json = baos.toString(StandardCharsets.UTF_8.name());
             loadLevelFromJson(json);
+
         } catch (IOException e) {
             throw new RuntimeException("Failed to load levels from assets", e);
         }
