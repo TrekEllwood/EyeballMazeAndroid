@@ -39,4 +39,6 @@ dependencies {
 
     implementation libs.gson
     implementation libs.flexbox
+    implementation libs.media3.exoplayer
+    implementation libs.media3.ui
 }

@@ -20,14 +20,13 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import android.graphics.Point;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 
 import androidx.core.graphics.Insets;
-
-import android.widget.Toast;
 
 import com.google.android.flexbox.FlexDirection;
 import com.google.android.flexbox.FlexWrap;
@@ -52,6 +51,7 @@ import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import nz.ac.ara.tre46.eyeballmaze.enums.Message;
+import nz.ac.ara.tre46.eyeballmaze.ui.TutorialVideoDialogFragment;
 import nz.ac.ara.tre46.eyeballmaze.viewmodel.EyeballMazeViewModel;
 import nz.ac.ara.tre46.eyeballmaze.viewmodel.EyeballMazeViewModelFactory;
 import nz.ac.ara.tre46.eyeballmaze.view.MazeView;
@@ -72,6 +72,7 @@ public class MainActivity extends AppCompatActivity {
     private Button replayBtn;
     private ImageButton pauseBtn;
     private ImageButton muteBtn;
+    private ImageButton howToBtn;
     private boolean gameButtonsEnabled = true;
     private boolean isMuted = false;
     private long startTime = 0L;
@@ -178,14 +179,6 @@ public class MainActivity extends AppCompatActivity {
             viewModel.clickToMoveToward(row, col); // Handles messages
         });
 
-//        LinearLayout.LayoutParams mazeParams = new LinearLayout.LayoutParams(
-//                isLandscape ? 0 : LayoutParams.MATCH_PARENT,
-//                isLandscape ? LayoutParams.MATCH_PARENT : 0,
-//                isLandscape ? mazeWeight : 1.0f
-//        );
-//        mazeView.setLayoutParams(mazeParams);
-//        root.addView(mazeView, mazeParams);
-
         // Controls container
         LinearLayout controls = new LinearLayout(this);
         controls.setOrientation(isLandscape ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL);
@@ -264,6 +257,22 @@ public class MainActivity extends AppCompatActivity {
 
         applyMuteState();
 
+        howToBtn = new ImageButton(this);
+        howToBtn.setImageResource(R.drawable.baseline_help_24);
+        howToBtn.setColorFilter(tint, PorterDuff.Mode.SRC_IN);
+        howToBtn.setContentDescription(getString(R.string.help));
+        howToBtn.setBackground(null);
+
+        howToBtn.setLayoutParams(new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        ));
+
+        howToBtn.setOnClickListener(v -> {
+            TutorialVideoDialogFragment dialog = new TutorialVideoDialogFragment();
+            dialog.show(getSupportFragmentManager(), "RulesVideo");
+        });
+
         replayBtn = new Button(this);
         replayBtn.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -328,50 +337,6 @@ public class MainActivity extends AppCompatActivity {
                     LayoutParams.WRAP_CONTENT
             ));
 
-//            ScrollView scrollView = new ScrollView(this);
-//            scrollView.setLayoutParams(new LinearLayout.LayoutParams(
-//                    LayoutParams.MATCH_PARENT,
-//                    LayoutParams.MATCH_PARENT
-//            ));
-//
-//            LinearLayout verticalLayout = new LinearLayout(this);
-//            verticalLayout.setOrientation(LinearLayout.VERTICAL);
-//            verticalLayout.setPadding(16, 16, 16, 16);
-//            verticalLayout.setGravity(Gravity.CENTER_HORIZONTAL);
-//            scrollView.addView(verticalLayout);
-//
-//            verticalLayout.addView(titleTextView);
-//            verticalLayout.addView(goalsStatusTextView);
-//            verticalLayout.addView(moveCounterTextView);
-//            verticalLayout.addView(timerTextView);
-//
-//            LinearLayout row1 = new LinearLayout(this);
-//            row1.setOrientation(LinearLayout.HORIZONTAL);
-//            row1.setGravity(Gravity.CENTER_HORIZONTAL);
-//            row1.setPadding(0, 8, 0, 8);
-//            row1.addView(resetBtn);
-//            row1.addView(undoBtn);
-//            verticalLayout.addView(row1);
-//
-//            LinearLayout row2 = new LinearLayout(this);
-//            row2.setOrientation(LinearLayout.HORIZONTAL);
-//            row2.setGravity(Gravity.CENTER_HORIZONTAL);
-//            row2.setPadding(0, 8, 0, 8);
-//            row2.addView(replayBtn);
-//            verticalLayout.addView(row2);
-//
-//            LinearLayout row3 = new LinearLayout(this);
-//            row3.setOrientation(LinearLayout.HORIZONTAL);
-//            row3.setGravity(Gravity.CENTER_HORIZONTAL);
-//            row3.setPadding(0, 8, 0, 0);
-//            row3.addView(pauseBtn);
-//            row3.addView(muteBtn);
-//            verticalLayout.addView(row3);
-//
-//            verticalLayout.addView(spinnerRow);
-//
-//            controls.addView(scrollView);
-
             // Create vertical layout for controls
             LinearLayout verticalLayout = new LinearLayout(this);
             verticalLayout.setOrientation(LinearLayout.VERTICAL);
@@ -409,6 +374,7 @@ public class MainActivity extends AppCompatActivity {
             row3.setPadding(0, 8, 0, 0);
             row3.addView(pauseBtn);
             row3.addView(muteBtn);
+            row3.addView(howToBtn);
             verticalLayout.addView(row3);
 
             verticalLayout.addView(spinnerRow);
@@ -479,6 +445,7 @@ public class MainActivity extends AppCompatActivity {
             row2.setPadding(0, 8, 0, 8);
             row2.addView(pauseBtn);
             row2.addView(muteBtn);
+            row2.addView(howToBtn);
 
             verticalLayout.addView(row1);
             verticalLayout.addView(row2);

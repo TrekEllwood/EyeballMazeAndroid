@@ -1,20 +1,5 @@
 [
   {
-    "id": 0,
-    "startRow": 2,
-    "startCol": 1,
-    "startDir": "UP",
-    "grid": [
-      ["BLUE_DIAMOND", "BLANK_BLANK", "BLUE_FLOWER", "GREEN_FLOWER"],
-      ["RED_CROSS", "RED_STAR", "YELLOW_DIAMOND", "BLANK_BLANK"],
-      ["GREEN_CROSS", "RED_STAR", "BLUE_STAR", "RED_FLOWER"],
-      ["BLANK_BLANK", "YELLOW_STAR", "BLANK_BLANK", "BLANK_BLANK"]
-    ],
-    "goals": [
-      { "row": 0, "col": 2 }
-    ]
-  },
-  {
     "id": 1,
     "startRow": 5,
     "startCol": 1,
