@@ -58,7 +58,6 @@ public class MazeView extends View {
     private ColorProvider colorProvider;
     private ShapeProvider shapeProvider;
 
-    //    private String goalLabel;
     private Bitmap goalLabelIcon;
 
     public MazeView(Context context) {
@@ -121,7 +120,7 @@ public class MazeView extends View {
 
 
     /**
-     * Called by your Activity when the ViewModel’s eyeball‐row/col change
+     * Called by Activity when the ViewModel’s eyeball‐row/col change
      */
     public void setEyeballPosition(int row, int col) {
         this.eyeballRow = row;
@@ -130,7 +129,7 @@ public class MazeView extends View {
     }
 
     /**
-     * Called by your Activity when the ViewModel’s goal‐flag changes
+     * Called by Activity when the ViewModel’s goal‐flag changes
      */
     public void setCurrentSquareIsGoal(boolean isGoal) {
         this.currentGoal = isGoal;
@@ -193,7 +192,7 @@ public class MazeView extends View {
                 // cell border
                 canvas.drawRect(left, top, right, bottom, linePaint);
 
-                // If this cell is a goal, draw "Goal" text
+                // If this cell is a goal
                 String key = r + "," + c;
                 if (goalKeys.contains(key)) {
                     goalTextPaint.setColor(android.graphics.Color.WHITE);
@@ -341,7 +340,6 @@ public class MazeView extends View {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-//        if (board == null || tapListener == null) return false;
         if (boardRows == 0 || boardCols == 0 || tapListener == null) return false;
         if (event.getAction() != MotionEvent.ACTION_DOWN) return false;
 
@@ -373,9 +371,9 @@ public class MazeView extends View {
     }
 
     @Override
-    public boolean performClick() { // accessibility services
+    public boolean performClick() {
         super.performClick();
-        // Could do something here if needed for accessibility
+        // Do something here for accessibility
         return true;
     }
 

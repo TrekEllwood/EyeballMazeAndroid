@@ -95,7 +95,7 @@ public class TutorialVideoDialogFragment extends DialogFragment {
         if (dialog != null && dialog.getWindow() != null) {
             dialog.getWindow().setLayout(
                     ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
+                    ViewGroup.LayoutParams.MATCH_PARENT
             );
         }
     }
