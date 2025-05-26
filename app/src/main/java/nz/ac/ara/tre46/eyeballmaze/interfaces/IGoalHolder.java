@@ -14,7 +14,7 @@ public interface IGoalHolder {
 
     public boolean areAllGoalsCompleted();
 
-    public void completedGoal(int row, int colmun);
+    public void completedGoal(int row, int column);
 
     public void removeGoalAt(int row, int column);
 
