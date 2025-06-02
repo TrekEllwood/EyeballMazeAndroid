@@ -464,7 +464,7 @@ public class MainActivity extends AppCompatActivity {
         float mazeWeight = 0.5f;
         float controlsWeight = 0.5f;
 
-        // 1. Add mazeView using weight
+        // Add mazeView using weight
         LinearLayout.LayoutParams mazeParams = new LinearLayout.LayoutParams(
                 isLandscape ? 0 : LayoutParams.MATCH_PARENT,
                 isLandscape ? LayoutParams.MATCH_PARENT : 0,
@@ -472,7 +472,7 @@ public class MainActivity extends AppCompatActivity {
         );
         root.addView(mazeView, mazeParams);
 
-        // 2. Add controls using weight
+        // Add controls using weight
         LinearLayout.LayoutParams controlsParams = new LinearLayout.LayoutParams(
                 isLandscape ? 0 : LayoutParams.MATCH_PARENT,
                 isLandscape ? LayoutParams.MATCH_PARENT : LayoutParams.WRAP_CONTENT,
@@ -490,11 +490,11 @@ public class MainActivity extends AppCompatActivity {
 
         viewModel.getMoveCount().observe(this, count -> moveCounterTextView.setText(getString(R.string.moves_format, count)));
 
-        // 3. Set this layout as content view
+        // Set this layout as content view
         setContentView(root);
         syncMazeViewFromViewModel();
 
-        // 4. Force maze to be square based on actual height (in landscape)
+        // Force maze to be square based on actual height (in landscape)
         mazeView.post(() -> {
             if (isLandscape) {
                 int squareSize = mazeView.getHeight();  // determined by layout weight
@@ -747,7 +747,7 @@ public class MainActivity extends AppCompatActivity {
         undoBtn.setEnabled(false);
 
         final List<Point> trail = new ArrayList<>(movePlaybackTrail);
-        final int[] index = {1};
+        final int[] index = {0};
 
         playbackRunnable = new Runnable() {
             @Override
