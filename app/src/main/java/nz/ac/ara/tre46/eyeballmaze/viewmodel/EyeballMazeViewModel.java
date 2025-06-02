@@ -228,6 +228,22 @@ public class EyeballMazeViewModel extends ViewModel {
         moveHappened.setValue(false);
     }
 
+    public void setDirectionUp() {
+        dirLiveData.setValue(Direction.UP);
+    }
+
+    public void setDirectionDown() {
+        dirLiveData.setValue(Direction.DOWN);
+    }
+
+    public void setDirectionLeft() {
+        dirLiveData.setValue(Direction.LEFT);
+    }
+
+    public void setDirectionRight() {
+        dirLiveData.setValue(Direction.RIGHT);
+    }
+
     public void updateCanReplay(Collection<Point> trail) {
         canReplayLiveData.setValue(trail.size() > 1);
     }

@@ -80,8 +80,11 @@ public class MainActivity extends AppCompatActivity {
     private boolean isPaused = false;
     private boolean hasTimerStarted = false;
     private boolean isSolved = false;
+    private boolean isPlayingBack = false;
+    private Runnable playbackRunnable;
     private final Deque<Point> movePlaybackTrail = new ArrayDeque<>();
     private final Handler timerHandler = new Handler();
+    private final Handler playbackHandler = new Handler();
     private final Runnable timerRunnable = new Runnable() {
         @Override
         public void run() {
@@ -269,6 +272,7 @@ public class MainActivity extends AppCompatActivity {
         ));
 
         howToBtn.setOnClickListener(v -> {
+            cancelPlaybackAndJumpToEnd();
             TutorialVideoDialogFragment dialog = new TutorialVideoDialogFragment();
             dialog.show(getSupportFragmentManager(), "RulesVideo");
         });
@@ -309,6 +313,7 @@ public class MainActivity extends AppCompatActivity {
                 setGameButtonsEnabled(false);
                 setPausedStateUI();
                 timerHandler.removeCallbacks(timerRunnable);
+                cancelPlaybackAndJumpToEnd();
             }
         });
 
@@ -538,6 +543,7 @@ public class MainActivity extends AppCompatActivity {
                 if (isFirstSpinnerSelection.getAndSet(false)) return;
 
                 if (position != viewModel.getCurrentLevelIndex()) {
+                    cancelPlaybackAndJumpToEnd();
                     levelSpinner.setEnabled(false);
                     viewModel.setLevel(position);
                     goToNextLevel();
@@ -734,25 +740,54 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void playBackMoves() {
-        if (movePlaybackTrail.isEmpty()) return;
+        if (movePlaybackTrail.isEmpty() || isPlayingBack) return;
 
-        new Thread(() -> {
-            for (Point p : movePlaybackTrail) {
-                int row = p.y;
-                int col = p.x;
+        isPlayingBack = true;
+        resetBtn.setEnabled(false);
+        undoBtn.setEnabled(false);
 
-                runOnUiThread(() -> {
-                    mazeView.setEyeballPosition(row, col);
+        final List<Point> trail = new ArrayList<>(movePlaybackTrail);
+        final int[] index = {1};
+
+        playbackRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (index[0] < trail.size()) {
+                    Point p = trail.get(index[0]);
+                    mazeView.setEyeballPosition(p.y, p.x);
                     mazeView.invalidate();
-                });
-
-                try {
-                    Thread.sleep(300);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
+                    index[0]++;
+                    playbackHandler.postDelayed(this, 400);
+                } else {
+                    isPlayingBack = false;
+                    playbackRunnable = null;
+                    updateGameButtonsState();
                 }
             }
-        }).start();
+        };
+
+        playbackHandler.post(playbackRunnable);
+    }
+
+    private void cancelPlaybackAndJumpToEnd() {
+        if (isPlayingBack && playbackRunnable != null) {
+            playbackHandler.removeCallbacks(playbackRunnable);
+            isPlayingBack = false;
+            playbackRunnable = null;
+
+            // Jump to last move
+            Point last = null;
+            for (Point p : movePlaybackTrail) {
+                last = p;
+            }
+
+            if (last != null) {
+                mazeView.setEyeballPosition(last.y, last.x);
+                mazeView.invalidate();
+            }
+
+            updateGameButtonsState();
+        }
     }
 
     private void recordStartPosition() {
@@ -858,6 +893,11 @@ public class MainActivity extends AppCompatActivity {
             resetBtn.setEnabled(enabled || isSolved); // Keep enabled if maze is solved
         if (undoBtn != null) undoBtn.setEnabled(enabled);
         if (replayBtn != null) replayBtn.setEnabled(enabled || isSolved);
+    }
+
+    private void updateGameButtonsState() {
+        resetBtn.setEnabled(gameButtonsEnabled || isSolved);
+        undoBtn.setEnabled(gameButtonsEnabled);
     }
 
     private void restoreTimerState(Bundle savedInstanceState) {
