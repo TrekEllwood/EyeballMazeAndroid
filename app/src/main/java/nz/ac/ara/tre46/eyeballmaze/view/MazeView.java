@@ -45,7 +45,6 @@ public class MazeView extends View {
     private Runnable clearFailedRunnable;
 
     private final Path reusablePath = new Path();
-//    private final RectF reusableRectF = new RectF();
     private final RectF reusableGoalRect = new RectF();
 
     private final Set<String> goalKeys = new HashSet<>();
@@ -373,7 +372,7 @@ public class MazeView extends View {
     @Override
     public boolean performClick() {
         super.performClick();
-        // Do something here for accessibility
+        // Could do something here for accessibility
         return true;
     }
 

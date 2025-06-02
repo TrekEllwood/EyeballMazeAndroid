@@ -61,10 +61,6 @@ public class EyeballMazeViewModel extends ViewModel {
         return currentGoalLiveData;
     }
 
-    public LiveData<Message> getMoveStatus() {
-        return moveStatusLiveData;
-    }
-
     public LiveData<Integer> getGoalsRemaining() {
         return goalsRemaining;
     }
@@ -83,10 +79,6 @@ public class EyeballMazeViewModel extends ViewModel {
 
     public LiveData<Boolean> getCanReplayLiveData() {
         return canReplayLiveData;
-    }
-
-    public void clearMoveStatus() {
-        moveStatusLiveData.setValue(null);
     }
 
     public void resetMaze() {
@@ -226,22 +218,6 @@ public class EyeballMazeViewModel extends ViewModel {
 
     public void clearMoveHappened() {
         moveHappened.setValue(false);
-    }
-
-    public void setDirectionUp() {
-        dirLiveData.setValue(Direction.UP);
-    }
-
-    public void setDirectionDown() {
-        dirLiveData.setValue(Direction.DOWN);
-    }
-
-    public void setDirectionLeft() {
-        dirLiveData.setValue(Direction.LEFT);
-    }
-
-    public void setDirectionRight() {
-        dirLiveData.setValue(Direction.RIGHT);
     }
 
     public void updateCanReplay(Collection<Point> trail) {

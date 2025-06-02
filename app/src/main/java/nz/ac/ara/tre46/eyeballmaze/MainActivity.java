@@ -50,7 +50,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import nz.ac.ara.tre46.eyeballmaze.enums.Message;
 import nz.ac.ara.tre46.eyeballmaze.ui.TutorialVideoDialogFragment;
 import nz.ac.ara.tre46.eyeballmaze.viewmodel.EyeballMazeViewModel;
 import nz.ac.ara.tre46.eyeballmaze.viewmodel.EyeballMazeViewModelFactory;
@@ -77,6 +76,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean isMuted = false;
     private long startTime = 0L;
     private long pausedTime = 0L;
+    private long solveTimeMillis = 0L;
     private boolean isPaused = false;
     private boolean hasTimerStarted = false;
     private boolean isSolved = false;
@@ -591,42 +591,31 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        viewModel.getMoveStatus().observe(this, message -> {
-            if (message != null && message != Message.OK) {
-                Snackbar snackbar = Snackbar.make(
-                        findViewById(android.R.id.content),
-                        getString(R.string.move_blocked, message.name()),
-                        Snackbar.LENGTH_SHORT
-                );
-                // Move position
-                View snackbarView = snackbar.getView();
-                FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) snackbarView.getLayoutParams();
-                params.gravity = Gravity.CENTER;
-                params.width = FrameLayout.LayoutParams.WRAP_CONTENT;
-                snackbarView.setLayoutParams(params);
-                snackbar.show();
-
-                viewModel.clearMoveStatus();
-            }
-        });
-
         viewModel.getGoalsRemaining().observe(this, remaining -> {
             if (goalsStatusTextView == null) return;
 
-            if (remaining <= 0 && !isSolved) {
+            if (remaining <= 0) {
+                if (isSolved) {
+                    goalsStatusTextView.setText(getString(R.string.solved));
+                    replayBtn.setEnabled(movePlaybackTrail.size() > 1);
+                    pauseBtn.setEnabled(false);
+                    setGameButtonsEnabled(false);
+                    return;
+                }
+
                 isSolved = true;
-
-                long solveTimeMillis = isPaused ? pausedTime - startTime : System.currentTimeMillis() - startTime;
-                final String solveTimeFormatted = String.format(Locale.US, "%02d:%02d",
-                        (solveTimeMillis / 1000) / 60,
-                        (solveTimeMillis / 1000) % 60
-                );
-
+                solveTimeMillis = isPaused ? pausedTime - startTime : System.currentTimeMillis() - startTime;
+                updateTimerDisplay(solveTimeMillis);
                 goalsStatusTextView.setText(getString(R.string.solved));
 
                 if (!isMuted && winSfx != null) {
                     winSfx.start();
                 }
+
+                final String solveTimeFormatted = String.format(Locale.US, "%02d:%02d",
+                        (solveTimeMillis / 1000) / 60,
+                        (solveTimeMillis / 1000) % 60
+                );
 
                 String message = getString(R.string.solved) + "\n" + getString(R.string.time_format, solveTimeFormatted);
                 Toast.makeText(MainActivity.this, message, Toast.LENGTH_SHORT).show();
@@ -651,7 +640,6 @@ public class MainActivity extends AppCompatActivity {
                     restoreTimerState();
                 });
 
-                snackbar.setDuration(Snackbar.LENGTH_LONG);
                 snackbar.show();
 
                 timerHandler.removeCallbacks(timerRunnable);
@@ -659,16 +647,17 @@ public class MainActivity extends AppCompatActivity {
                 setGameButtonsEnabled(false);
                 hasTimerStarted = false;
                 pauseBtn.setEnabled(false);
-            } else {
-                String goalText = getResources().getQuantityString(R.plurals.goals_remaining, remaining, remaining);
-                goalsStatusTextView.setText(goalText);
+                return;
+            }
 
-                Drawable flagIcon = AppCompatResources.getDrawable(this, R.drawable.baseline_flag_circle_24);
-                if (flagIcon != null) {
-                    flagIcon.setTint(ContextCompat.getColor(this, R.color.iconTint));
-                    flagIcon.setBounds(0, 0, flagIcon.getIntrinsicWidth(), flagIcon.getIntrinsicHeight());
-                    goalsStatusTextView.setCompoundDrawables(flagIcon, null, flagIcon, null);
-                }
+            String goalText = getResources().getQuantityString(R.plurals.goals_remaining, remaining, remaining);
+            goalsStatusTextView.setText(goalText);
+
+            Drawable flagIcon = AppCompatResources.getDrawable(this, R.drawable.baseline_flag_circle_24);
+            if (flagIcon != null) {
+                flagIcon.setTint(ContextCompat.getColor(this, R.color.iconTint));
+                flagIcon.setBounds(0, 0, flagIcon.getIntrinsicWidth(), flagIcon.getIntrinsicHeight());
+                goalsStatusTextView.setCompoundDrawables(flagIcon, null, flagIcon, null);
             }
         });
     }
@@ -691,6 +680,7 @@ public class MainActivity extends AppCompatActivity {
         outState.putBoolean("is_paused", isPaused);
         outState.putLong("paused_time", pausedTime);
         outState.putBoolean("is_solved", isSolved);
+        outState.putLong("solve_time_millis", solveTimeMillis);
         outState.putBoolean("is_muted", isMuted);
     }
 
@@ -820,14 +810,13 @@ public class MainActivity extends AppCompatActivity {
 
     private void restoreTimerState() {
         if (!hasTimerStarted || pauseBtn == null) {
-            updateTimerDisplay(0);
+            updateTimerDisplay(solveTimeMillis);
             pauseBtn.setEnabled(false);
             resetPausedStateUI();
             return;
         }
 
         long elapsed;
-
         if (isPaused && !isSolved) {
             elapsed = pausedTime - startTime;
             setPausedStateUI();
@@ -859,6 +848,8 @@ public class MainActivity extends AppCompatActivity {
     private void goToNextLevel() {
         isSolved = false;
         isPaused = false;
+        hasTimerStarted = false;
+        solveTimeMillis = 0L;
         movePlaybackTrail.clear();
         syncMazeViewFromViewModel();
         recordStartPosition();
@@ -906,6 +897,7 @@ public class MainActivity extends AppCompatActivity {
         isPaused = savedInstanceState.getBoolean("is_paused", false);
         pausedTime = savedInstanceState.getLong("paused_time", 0L);
         isSolved = savedInstanceState.getBoolean("is_solved", false);
+        solveTimeMillis = savedInstanceState.getLong("solve_time_millis", 0L);
     }
 
     private void applyMuteState() {
