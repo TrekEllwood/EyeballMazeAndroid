@@ -651,9 +651,9 @@ public class MainActivity extends AppCompatActivity {
                 snackbar.setAction(getString(R.string.next), v -> {
                     int next = viewModel.getCurrentLevelIndex() + 1;
                     if (next < viewModel.getLevelCount()) {
+                        cancelPlaybackAndJumpToEnd();
                         viewModel.setLevel(next);
                         levelSpinner.setSelection(viewModel.getCurrentLevelIndex());
-                        cancelPlaybackAndJumpToEnd();
                         goToNextLevel();
                     } else {
                         Toast endToast = Toast.makeText(MainActivity.this, getString(R.string.no_more_levels), Toast.LENGTH_LONG);
