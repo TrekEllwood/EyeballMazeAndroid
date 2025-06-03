@@ -653,6 +653,7 @@ public class MainActivity extends AppCompatActivity {
                     if (next < viewModel.getLevelCount()) {
                         viewModel.setLevel(next);
                         levelSpinner.setSelection(viewModel.getCurrentLevelIndex());
+                        cancelPlaybackAndJumpToEnd();
                         goToNextLevel();
                     } else {
                         Toast endToast = Toast.makeText(MainActivity.this, getString(R.string.no_more_levels), Toast.LENGTH_LONG);
