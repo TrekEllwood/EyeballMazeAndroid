@@ -50,6 +50,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import nz.ac.ara.tre46.eyeballmaze.enums.Message;
 import nz.ac.ara.tre46.eyeballmaze.ui.TutorialVideoDialogFragment;
 import nz.ac.ara.tre46.eyeballmaze.viewmodel.EyeballMazeViewModel;
 import nz.ac.ara.tre46.eyeballmaze.viewmodel.EyeballMazeViewModelFactory;
@@ -158,6 +159,8 @@ public class MainActivity extends AppCompatActivity {
         mazeView.setEyeballBitmap(eyeballBmp);
 
         mazeView.setOnCellTapListener((row, col) -> {
+            if (isSolved) return;
+
             if (viewModel.canMoveTo(row, col)) {
                 movePlaybackTrail.add(new Point(col, row)); // Save successful move
                 viewModel.updateCanReplay(movePlaybackTrail);
@@ -488,7 +491,7 @@ public class MainActivity extends AppCompatActivity {
         ImageViewCompat.setImageTintList(pauseBtn, tintList);
         ImageViewCompat.setImageTintList(muteBtn, tintList);
 
-        viewModel.getMoveCount().observe(this, count -> moveCounterTextView.setText(getString(R.string.moves_format, count)));
+        viewModel.getMoveCountLiveData().observe(this, count -> moveCounterTextView.setText(getString(R.string.moves_format, count)));
 
         // Set this layout as content view
         setContentView(root);
@@ -563,35 +566,54 @@ public class MainActivity extends AppCompatActivity {
 //        mazeView.setTypeProvider(viewModel::getTypeAt);
         mazeView.setGoalPositions(viewModel.getGoalPoints());
 
-        viewModel.getEyeballRow().observe(this, row -> {
-            Integer col = viewModel.getEyeballCol().getValue();
+        viewModel.getEyeballRowLiveData().observe(this, row -> {
+            Integer col = viewModel.getEyeballColLiveData().getValue();
             if (col != null) {
                 mazeView.setEyeballPosition(row, col);
                 mazeView.setGoalPositions(viewModel.getGoalPoints());
             }
         });
 
-        viewModel.getEyeballCol().observe(this, col -> {
-            Integer row = viewModel.getEyeballRow().getValue();
+        viewModel.getEyeballColLiveData().observe(this, col -> {
+            Integer row = viewModel.getEyeballRowLiveData().getValue();
             if (row != null) {
                 mazeView.setEyeballPosition(row, col);
             }
         });
 
-        viewModel.getEyeballDir().observe(this, mazeView::setDirection);
-        viewModel.isCurrentGoal().observe(this, isGoal -> {
+        viewModel.getEyeballDirLiveData().observe(this, mazeView::setDirection);
+        viewModel.isCurrentGoalLiveData().observe(this, isGoal -> {
             mazeView.setCurrentSquareIsGoal(isGoal);
             mazeView.invalidate();
         });
 
-        viewModel.getMoveHappened().observe(this, happened -> {
+        viewModel.getMoveHappenedLiveData().observe(this, happened -> {
             if (Boolean.TRUE.equals(happened)) {
                 playMoveSound();
                 viewModel.clearMoveHappened();
             }
         });
 
-        viewModel.getGoalsRemaining().observe(this, remaining -> {
+        viewModel.getMoveStatusLiveData().observe(this, message -> {
+            if (message != null && message != Message.OK) {
+                Snackbar snackbar = Snackbar.make(
+                        findViewById(android.R.id.content),
+                        getString(R.string.move_blocked, message.name()),
+                        Snackbar.LENGTH_SHORT
+                );
+                // Move position
+                View snackbarView = snackbar.getView();
+                FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) snackbarView.getLayoutParams();
+                params.gravity = Gravity.CENTER;
+                params.width = FrameLayout.LayoutParams.WRAP_CONTENT;
+                snackbarView.setLayoutParams(params);
+                snackbar.show();
+
+                viewModel.clearMoveStatusLiveData();
+            }
+        });
+
+        viewModel.getGoalsRemainingLiveData().observe(this, remaining -> {
             if (goalsStatusTextView == null) return;
 
             if (remaining <= 0) {
@@ -785,8 +807,8 @@ public class MainActivity extends AppCompatActivity {
         timerHandler.removeCallbacks(timerRunnable);
         timerTextView.setText(getString(R.string.time_format, "00:00"));
 
-        Integer row = viewModel.getEyeballRow().getValue();
-        Integer col = viewModel.getEyeballCol().getValue();
+        Integer row = viewModel.getEyeballRowLiveData().getValue();
+        Integer col = viewModel.getEyeballColLiveData().getValue();
 
         if (row != null && col != null) {
             movePlaybackTrail.clear();

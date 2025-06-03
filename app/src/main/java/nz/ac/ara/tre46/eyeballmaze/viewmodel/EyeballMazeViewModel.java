@@ -28,10 +28,10 @@ public class EyeballMazeViewModel extends ViewModel {
     private final MutableLiveData<Direction> dirLiveData = new MutableLiveData<>();
     private final MutableLiveData<Boolean> currentGoalLiveData = new MutableLiveData<>();
     private final MutableLiveData<Message> moveStatusLiveData = new MutableLiveData<>();
-    private final MutableLiveData<Integer> goalsRemaining = new MutableLiveData<>();
+    private final MutableLiveData<Integer> goalsRemainingLiveData = new MutableLiveData<>();
     private final MutableLiveData<Boolean> canUndoLiveData = new MutableLiveData<>(false);
-    private final MutableLiveData<Integer> moveCount = new MutableLiveData<>(0);
-    private final MutableLiveData<Boolean> moveHappened = new MutableLiveData<>(false);
+    private final MutableLiveData<Integer> moveCountLiveData = new MutableLiveData<>(0);
+    private final MutableLiveData<Boolean> moveHappenedLiveData = new MutableLiveData<>(false);
     private final MutableLiveData<Boolean> canReplayLiveData = new MutableLiveData<>(false);
 
     private final Deque<Object> undoStack = new ArrayDeque<>();
@@ -45,45 +45,53 @@ public class EyeballMazeViewModel extends ViewModel {
     }
 
     // === Accessors ===
-    public LiveData<Integer> getEyeballRow() {
+    public LiveData<Integer> getEyeballRowLiveData() {
         return rowLiveData;
     }
 
-    public LiveData<Integer> getEyeballCol() {
+    public LiveData<Integer> getEyeballColLiveData() {
         return colLiveData;
     }
 
-    public LiveData<Direction> getEyeballDir() {
+    public LiveData<Direction> getEyeballDirLiveData() {
         return dirLiveData;
     }
 
-    public LiveData<Boolean> isCurrentGoal() {
+    public LiveData<Boolean> isCurrentGoalLiveData() {
         return currentGoalLiveData;
     }
 
-    public LiveData<Integer> getGoalsRemaining() {
-        return goalsRemaining;
+    public LiveData<Message> getMoveStatusLiveData() {
+        return moveStatusLiveData;
+    }
+
+    public LiveData<Integer> getGoalsRemainingLiveData() {
+        return goalsRemainingLiveData;
     }
 
     public LiveData<Boolean> canUndoLiveData() {
         return canUndoLiveData;
     }
 
-    public LiveData<Integer> getMoveCount() {
-        return moveCount;
+    public LiveData<Integer> getMoveCountLiveData() {
+        return moveCountLiveData;
     }
 
-    public LiveData<Boolean> getMoveHappened() {
-        return moveHappened;
+    public LiveData<Boolean> getMoveHappenedLiveData() {
+        return moveHappenedLiveData;
     }
 
     public LiveData<Boolean> getCanReplayLiveData() {
         return canReplayLiveData;
     }
 
+    public void clearMoveStatusLiveData() {
+        moveStatusLiveData.setValue(null);
+    }
+
     public void resetMaze() {
         game.resetCurrentLevel();
-        moveCount.setValue(0);
+        moveCountLiveData.setValue(0);
         resetUndo();
         syncGameState();
     }
@@ -112,9 +120,9 @@ public class EyeballMazeViewModel extends ViewModel {
         if (game.canMoveTo(row, col)) {
             pushUndoState();
             game.moveTo(row, col);
-            Integer current = moveCount.getValue();
-            moveCount.setValue((current != null ? current : 0) + 1);
-            moveHappened.setValue(true);
+            Integer current = moveCountLiveData.getValue();
+            moveCountLiveData.setValue((current != null ? current : 0) + 1);
+            moveHappenedLiveData.setValue(true);
         } else {
             moveStatusLiveData.setValue(game.messageIfMovingTo(row, col));
         }
@@ -155,7 +163,7 @@ public class EyeballMazeViewModel extends ViewModel {
 
         game.setLevel(index);
         currentLevelIndex = index;
-        moveCount.setValue(0);
+        moveCountLiveData.setValue(0);
         resetUndo();
         syncGameState();
 
@@ -190,7 +198,7 @@ public class EyeballMazeViewModel extends ViewModel {
             count -= 1;
         }
 
-        goalsRemaining.setValue(count);
+        goalsRemainingLiveData.setValue(count);
     }
 
     private void pushUndoState() {
@@ -205,7 +213,7 @@ public class EyeballMazeViewModel extends ViewModel {
         if (!undoStack.isEmpty()) {
             Object previous = undoStack.pop();
             game.loadState(previous);
-            moveCount.setValue(Math.max(0, moveCount.getValue() != null ? moveCount.getValue() - 1 : 0));
+            moveCountLiveData.setValue(Math.max(0, moveCountLiveData.getValue() != null ? moveCountLiveData.getValue() - 1 : 0));
             syncGameState();
         }
         canUndoLiveData.setValue(!undoStack.isEmpty());
@@ -217,7 +225,7 @@ public class EyeballMazeViewModel extends ViewModel {
     }
 
     public void clearMoveHappened() {
-        moveHappened.setValue(false);
+        moveHappenedLiveData.setValue(false);
     }
 
     public void updateCanReplay(Collection<Point> trail) {
