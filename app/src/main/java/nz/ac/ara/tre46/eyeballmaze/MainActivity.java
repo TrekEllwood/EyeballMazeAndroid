@@ -60,32 +60,22 @@ import nz.ac.ara.tre46.eyeballmaze.utils.SerializablePoint;
 public class MainActivity extends AppCompatActivity {
     private EyeballMazeViewModel viewModel;
     private MazeView mazeView;
-    private TextView titleTextView;
-    private TextView goalsStatusTextView;
-    private TextView moveCounterTextView;
-    private TextView timerTextView;
-    private MediaPlayer moveSfx;
-    private MediaPlayer winSfx;
-    private MediaPlayer badMoveSfx;
-    private Button resetBtn;
-    private Button undoBtn;
-    private Button replayBtn;
-    private ImageButton pauseBtn;
-    private ImageButton muteBtn;
-    private ImageButton howToBtn;
-    private boolean gameButtonsEnabled = true;
-    private boolean isMuted = false;
-    private long startTime = 0L;
-    private long pausedTime = 0L;
-    private long solveTimeMillis = 0L;
-    private boolean isPaused = false;
-    private boolean hasTimerStarted = false;
-    private boolean isSolved = false;
-    private boolean isPlayingBack = false;
+    private TextView titleTextView, goalsStatusTextView, moveCounterTextView, timerTextView;
+    private MediaPlayer moveSfx, winSfx, badMoveSfx;
+    private Button resetBtn, undoBtn, replayBtn;
+    private ImageButton pauseBtn, muteBtn, howToBtn;
     private Runnable playbackRunnable;
+    private final Handler timerHandler = new Handler(), playbackHandler = new Handler();
     private final Deque<Point> movePlaybackTrail = new ArrayDeque<>();
-    private final Handler timerHandler = new Handler();
-    private final Handler playbackHandler = new Handler();
+    private long startTime = 0L, pausedTime = 0L, solveTimeMillis = 0L;
+    private boolean
+            gameButtonsEnabled = true,
+            isMuted = false,
+            isPaused = false,
+            hasTimerStarted = false,
+            isSolved = false,
+            isPlayingBack = false;
+
     private final Runnable timerRunnable = new Runnable() {
         @Override
         public void run() {
