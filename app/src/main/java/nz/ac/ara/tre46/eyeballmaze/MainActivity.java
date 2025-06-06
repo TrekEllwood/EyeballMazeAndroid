@@ -43,8 +43,6 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.core.widget.ImageViewCompat;
 import androidx.lifecycle.ViewModelProvider;
 
-import java.util.Deque;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -66,7 +64,7 @@ public class MainActivity extends AppCompatActivity {
     private ImageButton pauseBtn, muteBtn, howToBtn;
     private Runnable playbackRunnable;
     private final Handler timerHandler = new Handler(), playbackHandler = new Handler();
-    private final Deque<Point> movePlaybackTrail = new ArrayDeque<>();
+//    private final Deque<Point> movePlaybackTrail = new ArrayDeque<>();
     private long startTime = 0L, pausedTime = 0L, solveTimeMillis = 0L;
     private boolean
             gameButtonsEnabled = true,
@@ -92,33 +90,30 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        viewModel = new ViewModelProvider(
+                this,
+                new EyeballMazeViewModelFactory(getApplicationContext())
+        ).get(EyeballMazeViewModel.class);
+
         if (savedInstanceState != null) {
             ArrayList<SerializablePoint> trailData =
                     (ArrayList<SerializablePoint>) savedInstanceState.getSerializable("move_trail");
 
             if (trailData != null) {
-                movePlaybackTrail.clear();
+                List<Point> points = new ArrayList<>();
                 for (SerializablePoint sp : trailData) {
-                    movePlaybackTrail.add(new Point(sp.x, sp.y));
+                    points.add(new Point(sp.x, sp.y));
                 }
+                viewModel.restorePlaybackTrail(points);
             }
 
             restoreTimerState(savedInstanceState);
             isMuted = savedInstanceState.getBoolean("is_muted", false);
         }
 
-//        setContentView(R.layout.activity_main); // Only need if using activity_main.xml
-
         moveSfx = MediaPlayer.create(this, R.raw.move);
         winSfx = MediaPlayer.create(this, R.raw.win);
         badMoveSfx = MediaPlayer.create(this, R.raw.bad);
-
-//        applyMuteState();
-
-        viewModel = new ViewModelProvider(
-                this,
-                new EyeballMazeViewModelFactory(getApplicationContext())
-        ).get(EyeballMazeViewModel.class);
 
         if (savedInstanceState == null) {
             viewModel.initializeLevelFromPreferences();
@@ -152,8 +147,7 @@ public class MainActivity extends AppCompatActivity {
             if (isSolved) return;
 
             if (viewModel.canMoveTo(row, col)) {
-                movePlaybackTrail.add(new Point(col, row)); // Save successful move
-                viewModel.updateCanReplay(movePlaybackTrail);
+                viewModel.addMoveToTrail(new Point(col, row)); // Save successful move
 
                 if (!hasTimerStarted) {
                     startTime = System.currentTimeMillis();
@@ -211,7 +205,7 @@ public class MainActivity extends AppCompatActivity {
             mazeView.setGoalPositions(viewModel.getGoalPoints());
             pauseBtn.setEnabled(false);
             goToNextLevel();
-            viewModel.updateCanReplay(movePlaybackTrail);
+            viewModel.updateCanReplay(viewModel.getPlaybackTrail());
         });
 
         undoBtn = new Button(this);
@@ -224,10 +218,7 @@ public class MainActivity extends AppCompatActivity {
             viewModel.undo();
             syncMazeViewFromViewModel();
 
-            if (!movePlaybackTrail.isEmpty()) {
-                movePlaybackTrail.removeLast();
-                viewModel.updateCanReplay(movePlaybackTrail);
-            }
+            viewModel.removeLastFromTrail();
         });
         viewModel.canUndoLiveData().observe(this, canUndo -> {
             if (undoBtn != null) {
@@ -609,7 +600,7 @@ public class MainActivity extends AppCompatActivity {
             if (remaining <= 0) {
                 if (isSolved) {
                     goalsStatusTextView.setText(getString(R.string.solved));
-                    replayBtn.setEnabled(movePlaybackTrail.size() > 1);
+                    replayBtn.setEnabled(viewModel.getPlaybackTrail().size() > 1);
                     pauseBtn.setEnabled(false);
                     setGameButtonsEnabled(false);
                     return;
@@ -682,10 +673,9 @@ public class MainActivity extends AppCompatActivity {
 
         // Convert Point list to SerializablePoint list
         ArrayList<SerializablePoint> serializableTrail = new ArrayList<>();
-        for (Point p : movePlaybackTrail) {
+        for (Point p : viewModel.getPlaybackTrail()) {
             serializableTrail.add(new SerializablePoint(p.x, p.y));
         }
-
         outState.putSerializable("move_trail", serializableTrail);
         // Keep time
         outState.putLong("start_time", startTime);
@@ -743,13 +733,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void playBackMoves() {
-        if (movePlaybackTrail.isEmpty() || isPlayingBack) return;
+        List<Point> trail = viewModel.getPlaybackTrail();
+        if (trail.isEmpty() || isPlayingBack) return;
 
         isPlayingBack = true;
         resetBtn.setEnabled(false);
         undoBtn.setEnabled(false);
 
-        final List<Point> trail = new ArrayList<>(movePlaybackTrail);
         final int[] index = {0};
 
         playbackRunnable = new Runnable() {
@@ -780,7 +770,7 @@ public class MainActivity extends AppCompatActivity {
 
             // Jump to last move
             Point last = null;
-            for (Point p : movePlaybackTrail) {
+            for (Point p : viewModel.getPlaybackTrail()) {
                 last = p;
             }
 
@@ -802,9 +792,8 @@ public class MainActivity extends AppCompatActivity {
         Integer col = viewModel.getEyeballColLiveData().getValue();
 
         if (row != null && col != null) {
-            movePlaybackTrail.clear();
-            movePlaybackTrail.add(new Point(col, row));
-            viewModel.updateCanReplay(movePlaybackTrail);
+            viewModel.clearPlaybackTrail();
+            viewModel.addMoveToTrail(new Point(col, row));
         }
     }
 
@@ -863,7 +852,7 @@ public class MainActivity extends AppCompatActivity {
         isPaused = false;
         hasTimerStarted = false;
         solveTimeMillis = 0L;
-        movePlaybackTrail.clear();
+        viewModel.clearPlaybackTrail();
         syncMazeViewFromViewModel();
         recordStartPosition();
         resetPausedStateUI();

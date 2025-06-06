@@ -4,7 +4,9 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 import java.util.Deque;
 import java.util.ArrayDeque;
@@ -35,6 +37,7 @@ public class EyeballMazeViewModel extends ViewModel {
     private final MutableLiveData<Boolean> canReplayLiveData = new MutableLiveData<>(false);
 
     private final Deque<Object> undoStack = new ArrayDeque<>();
+    private final Deque<Point> movePlaybackTrail = new ArrayDeque<>();
     private static final int MAX_UNDO = 10;
     private int currentLevelIndex = 0;
 
@@ -230,5 +233,31 @@ public class EyeballMazeViewModel extends ViewModel {
 
     public void updateCanReplay(Collection<Point> trail) {
         canReplayLiveData.setValue(trail.size() > 1);
+    }
+
+    public void clearPlaybackTrail() {
+        movePlaybackTrail.clear();
+    }
+
+    public void addMoveToTrail(Point point) {
+        movePlaybackTrail.add(point);
+        updateCanReplay(movePlaybackTrail);
+    }
+
+    public void removeLastFromTrail() {
+        if (!movePlaybackTrail.isEmpty()) {
+            movePlaybackTrail.removeLast();
+            updateCanReplay(movePlaybackTrail);
+        }
+    }
+
+    public List<Point> getPlaybackTrail() {
+        return new ArrayList<>(movePlaybackTrail);
+    }
+
+    public void restorePlaybackTrail(List<Point> trail) {
+        movePlaybackTrail.clear();
+        movePlaybackTrail.addAll(trail);
+        updateCanReplay(movePlaybackTrail);
     }
 }
