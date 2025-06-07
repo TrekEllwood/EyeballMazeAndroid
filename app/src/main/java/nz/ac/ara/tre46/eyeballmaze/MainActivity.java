@@ -1,9 +1,11 @@
 package nz.ac.ara.tre46.eyeballmaze;
 
 import android.content.res.ColorStateList;
+import android.content.res.Configuration;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
-import android.media.MediaPlayer;
+import android.media.AudioAttributes;
+import android.media.SoundPool;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.Gravity;
@@ -59,8 +61,8 @@ import nz.ac.ara.tre46.eyeballmaze.utils.SerializablePoint;
 public class MainActivity extends AppCompatActivity {
     private EyeballMazeViewModel viewModel;
     private MazeView mazeView;
-    private TextView titleTextView, goalsStatusTextView, moveCounterTextView, timerTextView;
-    private MediaPlayer moveSfx, winSfx, badMoveSfx;
+    private TextView titleTextView, spinnerLabel, goalsStatusTextView, moveCounterTextView, timerTextView;
+    private SoundPool soundPool;
     private Button resetBtn, undoBtn, replayBtn;
     private ImageButton pauseBtn, muteBtn, howToBtn;
     private Spinner levelSpinner;
@@ -74,7 +76,10 @@ public class MainActivity extends AppCompatActivity {
             isPaused = false,
             hasTimerStarted = false,
             isSolved = false,
-            isPlayingBack = false;
+            isPlayingBack = false,
+            soundsLoaded = false;
+    private int moveSoundId, winSoundId, badSoundId;
+    private static final float TEXT_SIZE = 16f;
 
     private final Runnable timerRunnable = new Runnable() {
         @Override
@@ -91,6 +96,12 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        setupInitialState(savedInstanceState);
+        setupLayoutAndViews(savedInstanceState);
+        setupObservers();
+    }
+
+    private void setupInitialState(Bundle savedInstanceState) {
         setupViewModel(savedInstanceState);
 
         if (savedInstanceState != null) {
@@ -99,287 +110,75 @@ public class MainActivity extends AppCompatActivity {
 
         setupSFX();
 
-        boolean isLandscape = getResources().getConfiguration().orientation ==
-                android.content.res.Configuration.ORIENTATION_LANDSCAPE;
-
-        if (isLandscape && getSupportActionBar() != null) {
+        if (isLandscapeMode() && getSupportActionBar() != null) {
             getSupportActionBar().hide();
         }
+    }
+
+    private void setupLayoutAndViews(Bundle savedInstanceState) {
+        boolean isLandscape = isLandscapeMode();
 
         LinearLayout root = setupLayout(isLandscape);
-
         mazeView = createMazeView();
 
-        // Controls container
+        setupControlButtonTints();
+        setupStatusTextViews();
+
+        LinearLayout spinnerRow = setupLevelSpinner();
+        LinearLayout controls = createControlsContainer(isLandscape, spinnerRow);
+
+        addViewsToRoot(root, controls, isLandscape);
+        setContentView(root);
+
+        syncMazeViewFromViewModel();
+        resizeMazeView(root, controls, isLandscape);
+
+        if (isFirstLaunch(savedInstanceState)) {
+            recordStartPosition();
+        }
+    }
+
+    private LinearLayout createControlsContainer(boolean isLandscape, LinearLayout spinnerRow) {
         LinearLayout controls = new LinearLayout(this);
         controls.setOrientation(isLandscape ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL);
         controls.setGravity(Gravity.CENTER_VERTICAL);
 
-        // Spinner row: label + spinner side by side
-        LinearLayout spinnerRow = new LinearLayout(this);
-        spinnerRow.setOrientation(LinearLayout.HORIZONTAL);
-        spinnerRow.setGravity(Gravity.CENTER_HORIZONTAL);
-
-        TextView spinnerLabel = new TextView(this);
-        spinnerLabel.setText(getString(R.string.choose_maze));
-        spinnerLabel.setTextSize(16);
-        spinnerLabel.setPadding(0, 0, 16, 0);  // space between label and spinner
-
-        levelSpinner = new Spinner(this);
-        LinearLayout.LayoutParams spinnerParams = new LinearLayout.LayoutParams(
-                LayoutParams.WRAP_CONTENT,
-                LayoutParams.WRAP_CONTENT
-        );
-        levelSpinner.setLayoutParams(spinnerParams);
-
-        spinnerRow.addView(spinnerLabel);
-        spinnerRow.addView(levelSpinner);
-
-        int tint = ContextCompat.getColor(this, R.color.iconTint);
-        createControlButtons(tint);
-        applyMuteState();
-
-        timerTextView = new TextView(this);
-        timerTextView.setTextSize(16);
-        timerTextView.setGravity(Gravity.CENTER_HORIZONTAL);
-
-        goalsStatusTextView = new TextView(this);
-        goalsStatusTextView.setTextSize(16);
-        goalsStatusTextView.setGravity(Gravity.CENTER_HORIZONTAL);
-        goalsStatusTextView.setLayoutParams(new LinearLayout.LayoutParams(
+        View controlsLayout = createControlsLayout(isLandscape, spinnerRow);
+        controls.addView(controlsLayout, new LinearLayout.LayoutParams(
                 LayoutParams.MATCH_PARENT,
-                LayoutParams.WRAP_CONTENT
+                LayoutParams.MATCH_PARENT
         ));
 
-        moveCounterTextView = new TextView(this);
-        moveCounterTextView.setTextSize(16);
-        moveCounterTextView.setGravity(Gravity.CENTER_HORIZONTAL);
+        return controls;
+    }
 
-        if (isLandscape) {
-            titleTextView = new TextView(this);
-            titleTextView.setTextSize(20);
-            titleTextView.setGravity(Gravity.CENTER_HORIZONTAL);
-            titleTextView.setLayoutParams(new LinearLayout.LayoutParams(
-                    LayoutParams.MATCH_PARENT,
-                    LayoutParams.WRAP_CONTENT
-            ));
-
-            // Create vertical layout for controls
-            LinearLayout verticalLayout = new LinearLayout(this);
-            verticalLayout.setOrientation(LinearLayout.VERTICAL);
-            verticalLayout.setPadding(16, 16, 16, 16);
-            verticalLayout.setGravity(Gravity.CENTER_HORIZONTAL);
-
-            verticalLayout.addView(titleTextView);
-            verticalLayout.addView(goalsStatusTextView);
-            verticalLayout.addView(moveCounterTextView);
-            verticalLayout.addView(timerTextView);
-
-            FlexboxLayout row1 = new FlexboxLayout(this);
-            row1.setFlexDirection(FlexDirection.ROW);
-            row1.setFlexWrap(FlexWrap.WRAP);
-            row1.setJustifyContent(JustifyContent.CENTER);
-            row1.setPadding(0, 8, 0, 8);
-
-            FlexboxLayout.LayoutParams btnParams = new FlexboxLayout.LayoutParams(
-                    ViewGroup.LayoutParams.WRAP_CONTENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-            );
-            btnParams.setMargins(8, 0, 8, 0);
-
-            resetBtn.setLayoutParams(btnParams);
-            undoBtn.setLayoutParams(btnParams);
-
-            row1.addView(resetBtn);
-            row1.addView(undoBtn);
-            row1.addView(replayBtn);
-            verticalLayout.addView(row1);
-
-            LinearLayout row3 = new LinearLayout(this);
-            row3.setOrientation(LinearLayout.HORIZONTAL);
-            row3.setGravity(Gravity.CENTER_HORIZONTAL);
-            row3.setPadding(0, 8, 0, 0);
-            row3.addView(pauseBtn);
-            row3.addView(muteBtn);
-            row3.addView(howToBtn);
-            verticalLayout.addView(row3);
-
-            verticalLayout.addView(spinnerRow);
-
-            // Wrap verticalLayout in ScrollView
-            ScrollView scrollView = new ScrollView(this);
-            scrollView.setLayoutParams(new ScrollView.LayoutParams(
-                    LayoutParams.MATCH_PARENT,
-                    LayoutParams.WRAP_CONTENT
-            ));
-            scrollView.addView(verticalLayout);
-
-            // Wrap ScrollView in FrameLayout to center vertically
-            FrameLayout scrollWrapper = new FrameLayout(this);
-            scrollWrapper.setLayoutParams(new LinearLayout.LayoutParams(
-                    LayoutParams.MATCH_PARENT,
-                    LayoutParams.MATCH_PARENT
-            ));
-
-            // Apply system insets to avoid camera
-            ViewCompat.setOnApplyWindowInsetsListener(scrollWrapper, (v, insets) -> {
-                Insets sysInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-                v.setPadding(sysInsets.left, sysInsets.top, sysInsets.right, sysInsets.bottom);
-                return insets;
-            });
-
-            // Add the ScrollView inside with vertical centering
-            FrameLayout.LayoutParams centeredParams = new FrameLayout.LayoutParams(
-                    LayoutParams.MATCH_PARENT,
-                    LayoutParams.WRAP_CONTENT,
-                    Gravity.CENTER_VERTICAL
-            );
-            scrollWrapper.addView(scrollView, centeredParams);
-
-            // Add to controls
-            controls.addView(scrollWrapper, new LinearLayout.LayoutParams(
-                    LayoutParams.MATCH_PARENT,
-                    LayoutParams.MATCH_PARENT
-            ));
-        } else {
-            ScrollView scrollView = new ScrollView(this);
-            scrollView.setLayoutParams(new LinearLayout.LayoutParams(
-                    LayoutParams.MATCH_PARENT,
-                    LayoutParams.MATCH_PARENT
-            ));
-
-            LinearLayout verticalLayout = new LinearLayout(this);
-            verticalLayout.setOrientation(LinearLayout.VERTICAL);
-            verticalLayout.setPadding(16, 16, 16, 16);
-            verticalLayout.setGravity(Gravity.CENTER_HORIZONTAL);
-            scrollView.addView(verticalLayout);
-
-            verticalLayout.addView(goalsStatusTextView);
-            verticalLayout.addView(moveCounterTextView);
-            verticalLayout.addView(timerTextView);
-
-            LinearLayout row1 = new LinearLayout(this);
-            row1.setOrientation(LinearLayout.HORIZONTAL);
-            row1.setGravity(Gravity.CENTER_HORIZONTAL);
-            row1.setPadding(0, 8, 0, 8);
-            row1.addView(resetBtn);
-            row1.addView(undoBtn);
-            row1.addView(replayBtn);
-
-            LinearLayout row2 = new LinearLayout(this);
-            row2.setOrientation(LinearLayout.HORIZONTAL);
-            row2.setGravity(Gravity.CENTER_HORIZONTAL);
-            row2.setPadding(0, 8, 0, 8);
-            row2.addView(pauseBtn);
-            row2.addView(muteBtn);
-            row2.addView(howToBtn);
-
-            verticalLayout.addView(row1);
-            verticalLayout.addView(row2);
-            verticalLayout.addView(spinnerRow);
-
-            controls.removeAllViews();
-            controls.setGravity(Gravity.NO_GRAVITY); // Fill space
-            controls.addView(scrollView);
-        }
-
+    private void addViewsToRoot(LinearLayout root, LinearLayout controls, boolean isLandscape) {
         float mazeWeight = 0.5f;
         float controlsWeight = 0.5f;
 
-        // Add mazeView using weight
         LinearLayout.LayoutParams mazeParams = new LinearLayout.LayoutParams(
                 isLandscape ? 0 : LayoutParams.MATCH_PARENT,
                 isLandscape ? LayoutParams.MATCH_PARENT : 0,
                 isLandscape ? mazeWeight : 1.0f
         );
-        root.addView(mazeView, mazeParams);
 
-        // Add controls using weight
         LinearLayout.LayoutParams controlsParams = new LinearLayout.LayoutParams(
                 isLandscape ? 0 : LayoutParams.MATCH_PARENT,
                 isLandscape ? LayoutParams.MATCH_PARENT : LayoutParams.WRAP_CONTENT,
                 isLandscape ? controlsWeight : 0f
         );
+
+        root.addView(mazeView, mazeParams);
         root.addView(controls, controlsParams);
+    }
 
-        ColorStateList tintList = ContextCompat.getColorStateList(this, R.color.icon_tint);
-        ImageViewCompat.setImageTintList(pauseBtn, tintList);
-        ImageViewCompat.setImageTintList(muteBtn, tintList);
+    private boolean isLandscapeMode() {
+        return getResources().getConfiguration().orientation ==
+                Configuration.ORIENTATION_LANDSCAPE;
+    }
 
-        // Set this layout as content view
-        setContentView(root);
-        syncMazeViewFromViewModel();
-
-        // Force maze to be square based on actual height (in landscape)
-        mazeView.post(() -> {
-            if (isLandscape) {
-                int squareSize = mazeView.getHeight();  // determined by layout weight
-                ViewGroup.LayoutParams params = mazeView.getLayoutParams();
-                // Force square shape
-                params.width = squareSize;
-                params.height = squareSize;
-                mazeView.setLayoutParams(params);
-            } else {
-                // In portrait: fit based on available space below controls
-                int screenHeight = root.getHeight();
-                int controlsHeight = controls.getHeight();
-                int availableHeight = screenHeight - controlsHeight;
-                int screenWidth = root.getWidth();
-                int size = Math.min(screenWidth, availableHeight);
-
-                ViewGroup.LayoutParams params = mazeView.getLayoutParams();
-                params.width = size;
-                params.height = size;
-                mazeView.setLayoutParams(params);
-            }
-
-            mazeView.invalidate();
-        });
-
-        if (savedInstanceState == null) {
-            recordStartPosition(); // only reset timer on first launch, not rotation
-        }
-
-        // Spinner setup
-        List<String> levelLabels = new ArrayList<>();
-        for (int i = 0; i < viewModel.getLevelCount(); i++) {
-            levelLabels.add("Maze " + viewModel.getMazeIdAt(i));
-        }
-
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(
-                this, android.R.layout.simple_spinner_item, levelLabels);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        levelSpinner.setAdapter(adapter);
-        levelSpinner.setSelection(viewModel.getCurrentLevelIndex());
-
-        AtomicBoolean isFirstSpinnerSelection = new AtomicBoolean(true);
-        levelSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if (isFirstSpinnerSelection.getAndSet(false)) return;
-
-                if (position != viewModel.getCurrentLevelIndex()) {
-                    cancelPlaybackAndJumpToEnd();
-                    levelSpinner.setEnabled(false);
-                    viewModel.setLevel(position);
-                    goToNextLevel();
-                    pauseBtn.setEnabled(false);
-                    levelSpinner.setEnabled(true);
-                }
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-            }
-        });
-
-        // Observers
-        mazeView.setColorProvider(viewModel::getColorAt);
-        mazeView.setShapeProvider(viewModel::getShapeAt);
-//        mazeView.setTypeProvider(viewModel::getTypeAt);
-        mazeView.setGoalPositions(viewModel.getGoalPoints());
-
-        observeViewModel();
+    private boolean isFirstLaunch(Bundle savedInstanceState) {
+        return savedInstanceState == null;
     }
 
     private void setupViewModel(Bundle savedInstanceState) {
@@ -396,9 +195,51 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setupSFX() {
-        moveSfx = MediaPlayer.create(this, R.raw.move);
-        winSfx = MediaPlayer.create(this, R.raw.win);
-        badMoveSfx = MediaPlayer.create(this, R.raw.bad);
+        AudioAttributes audioAttributes = new AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_GAME)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .build();
+
+        soundPool = new SoundPool.Builder()
+                .setMaxStreams(5)
+                .setAudioAttributes(audioAttributes)
+                .build();
+
+        moveSoundId = soundPool.load(this, R.raw.move, 1);
+        winSoundId = soundPool.load(this, R.raw.win, 1);
+        badSoundId = soundPool.load(this, R.raw.bad, 1);
+
+        soundPool.setOnLoadCompleteListener((soundPool, sampleId, status) -> {
+            if (status == 0) soundsLoaded = true;
+        });
+    }
+
+    private void setupControlButtonTints() {
+        ColorStateList tintList = ContextCompat.getColorStateList(this, R.color.iconTint);
+        assert tintList != null;
+        int tint = tintList.getDefaultColor();
+
+        createControlButtons(tint);
+        applyMuteState();
+
+        ImageViewCompat.setImageTintList(pauseBtn, tintList);
+        ImageViewCompat.setImageTintList(muteBtn, tintList);
+    }
+
+    private void setupStatusTextViews() {
+        goalsStatusTextView = createCenteredTextView();
+        goalsStatusTextView.setLayoutParams(new LinearLayout.LayoutParams(
+                LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+
+        moveCounterTextView = createCenteredTextView();
+        timerTextView = createCenteredTextView();
+    }
+
+    private TextView createCenteredTextView() {
+        TextView textView = new TextView(this);
+        textView.setTextSize(TEXT_SIZE);
+        textView.setGravity(Gravity.CENTER_HORIZONTAL);
+        return textView;
     }
 
     private LinearLayout setupLayout(boolean isLandscape) {
@@ -423,29 +264,54 @@ public class MainActivity extends AppCompatActivity {
             if (isSolved) return;
 
             if (viewModel.canMoveTo(row, col)) {
-                viewModel.addMoveToTrail(new Point(col, row)); // Save successful move
-
-                if (!hasTimerStarted) {
-                    startTime = System.currentTimeMillis();
-                    timerHandler.post(timerRunnable);
-                    hasTimerStarted = true;
-                    isPaused = false;
-                    setGameButtonsEnabled(true);
-                }
+                handleValidMove(row, col);
             } else {
-                // Show sound + visual feedback for invalid move
-                if (!isMuted && badMoveSfx != null) {
-                    badMoveSfx.seekTo(0);
-                    badMoveSfx.start();
-                }
-
-                mazeView.setFailedMoveAt(row, col);
+                handleInvalidMove(row, col);
             }
 
             viewModel.clickToMoveToward(row, col); // Handles messages
         });
 
         return mazeView;
+    }
+
+    private void handleValidMove(int row, int col) {
+        viewModel.addMoveToTrail(new Point(col, row));
+        if (!hasTimerStarted) {
+            startTime = System.currentTimeMillis();
+            timerHandler.post(timerRunnable);
+            hasTimerStarted = true;
+            isPaused = false;
+            setGameButtonsEnabled(true);
+        }
+    }
+
+    private void handleInvalidMove(int row, int col) {
+        playSoundEffect(badSoundId);
+        mazeView.setFailedMoveAt(row, col);
+    }
+
+    private void resizeMazeView(LinearLayout root, View controls, boolean isLandscape) {
+        // Force square mazeView
+        mazeView.post(() -> {
+            ViewGroup.LayoutParams params = mazeView.getLayoutParams();
+            if (isLandscape) {
+                int squareSize = mazeView.getHeight();
+                params.width = squareSize;
+                params.height = squareSize;
+            } else {
+                int screenHeight = root.getHeight();
+                int controlsHeight = controls.getHeight();
+                int availableHeight = screenHeight - controlsHeight;
+                int screenWidth = root.getWidth();
+                int size = Math.min(screenWidth, availableHeight);
+                params.width = size;
+                params.height = size;
+            }
+
+            mazeView.setLayoutParams(params);
+            mazeView.invalidate();
+        });
     }
 
     private void createControlButtons(int tint) {
@@ -558,6 +424,183 @@ public class MainActivity extends AppCompatActivity {
                 cancelPlaybackAndJumpToEnd();
             }
         });
+    }
+
+    private LinearLayout setupLevelSpinner() {
+        // Container row for label + spinner
+        LinearLayout spinnerRow = new LinearLayout(this);
+        spinnerRow.setOrientation(LinearLayout.HORIZONTAL);
+        spinnerRow.setGravity(Gravity.CENTER_HORIZONTAL);
+
+        spinnerLabel = new TextView(this);
+        spinnerLabel.setText(getString(R.string.choose_maze));
+        spinnerLabel.setTextSize(TEXT_SIZE);
+        spinnerLabel.setPadding(0, 0, 16, 0);  // space between label and spinner
+
+        levelSpinner = new Spinner(this);
+        levelSpinner.setLayoutParams(new LinearLayout.LayoutParams(
+                LayoutParams.WRAP_CONTENT,
+                LayoutParams.WRAP_CONTENT
+        ));
+
+        setupLevelSpinnerAdapter();
+        setupLevelSpinnerListener();
+
+        spinnerRow.addView(spinnerLabel);
+        spinnerRow.addView(levelSpinner);
+
+        return spinnerRow;
+    }
+
+    private void setupLevelSpinnerAdapter() {
+        List<String> levelLabels = new ArrayList<>();
+        for (int i = 0; i < viewModel.getLevelCount(); i++) {
+            levelLabels.add("Maze " + viewModel.getMazeIdAt(i));
+        }
+
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                this, android.R.layout.simple_spinner_item, levelLabels);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        levelSpinner.setAdapter(adapter);
+        levelSpinner.setSelection(viewModel.getCurrentLevelIndex());
+    }
+
+    private void setupLevelSpinnerListener() {
+        AtomicBoolean isFirstSpinnerSelection = new AtomicBoolean(true);
+
+        levelSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if (isFirstSpinnerSelection.getAndSet(false)) return;
+
+                if (position != viewModel.getCurrentLevelIndex()) {
+                    cancelPlaybackAndJumpToEnd();
+                    levelSpinner.setEnabled(false);
+                    viewModel.setLevel(position);
+                    goToNextLevel();
+                    pauseBtn.setEnabled(false);
+                    levelSpinner.setEnabled(true);
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
+        });
+    }
+
+    private View createControlsLayout(boolean isLandscape, LinearLayout spinnerRow) {
+        return isLandscape
+                ? createLandscapeControlsLayout(spinnerRow)
+                : createPortraitControlsLayout(spinnerRow);
+    }
+
+    private View createLandscapeControlsLayout(LinearLayout spinnerRow) {
+        titleTextView = new TextView(this);
+        titleTextView.setTextSize(20);
+        titleTextView.setGravity(Gravity.CENTER_HORIZONTAL);
+        titleTextView.setLayoutParams(new LinearLayout.LayoutParams(
+                LayoutParams.MATCH_PARENT,
+                LayoutParams.WRAP_CONTENT
+        ));
+
+        // Create vertical layout for controls
+        LinearLayout verticalLayout = new LinearLayout(this);
+        verticalLayout.setOrientation(LinearLayout.VERTICAL);
+        verticalLayout.setPadding(16, 16, 16, 16);
+        verticalLayout.setGravity(Gravity.CENTER_HORIZONTAL);
+
+        verticalLayout.addView(titleTextView);
+        verticalLayout.addView(goalsStatusTextView);
+        verticalLayout.addView(moveCounterTextView);
+        verticalLayout.addView(timerTextView);
+        verticalLayout.addView(createFlexButtonRow(resetBtn, undoBtn, replayBtn));
+        verticalLayout.addView(createHorizontalRow(pauseBtn, muteBtn, howToBtn));
+        verticalLayout.addView(spinnerRow);
+
+        // Wrap verticalLayout in ScrollView
+        ScrollView scrollView = new ScrollView(this);
+        scrollView.setLayoutParams(new ScrollView.LayoutParams(
+                LayoutParams.MATCH_PARENT,
+                LayoutParams.WRAP_CONTENT
+        ));
+        scrollView.addView(verticalLayout);
+
+        // Wrap ScrollView in FrameLayout to center vertically
+        FrameLayout scrollWrapper = new FrameLayout(this);
+        scrollWrapper.setLayoutParams(new LinearLayout.LayoutParams(
+                LayoutParams.MATCH_PARENT,
+                LayoutParams.MATCH_PARENT
+        ));
+
+        // Apply system insets to avoid camera
+        ViewCompat.setOnApplyWindowInsetsListener(scrollWrapper, (v, insets) -> {
+            Insets sysInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(sysInsets.left, sysInsets.top, sysInsets.right, sysInsets.bottom);
+            return insets;
+        });
+
+        // Add the ScrollView inside with vertical centering
+        FrameLayout.LayoutParams centeredParams = new FrameLayout.LayoutParams(
+                LayoutParams.MATCH_PARENT,
+                LayoutParams.WRAP_CONTENT,
+                Gravity.CENTER_VERTICAL
+        );
+        scrollWrapper.addView(scrollView, centeredParams);
+
+        return scrollWrapper;
+    }
+
+    private View createPortraitControlsLayout(LinearLayout spinnerRow) {
+        ScrollView scrollView = new ScrollView(this);
+        scrollView.setLayoutParams(new LinearLayout.LayoutParams(
+                LayoutParams.MATCH_PARENT,
+                LayoutParams.MATCH_PARENT
+        ));
+
+        LinearLayout verticalLayout = new LinearLayout(this);
+        verticalLayout.setOrientation(LinearLayout.VERTICAL);
+        verticalLayout.setPadding(16, 16, 16, 16);
+        verticalLayout.setGravity(Gravity.CENTER_HORIZONTAL);
+
+        verticalLayout.addView(goalsStatusTextView);
+        verticalLayout.addView(moveCounterTextView);
+        verticalLayout.addView(timerTextView);
+        verticalLayout.addView(createHorizontalRow(resetBtn, undoBtn, replayBtn));
+        verticalLayout.addView(createHorizontalRow(pauseBtn, muteBtn, howToBtn));
+        verticalLayout.addView(spinnerRow);
+
+        scrollView.addView(verticalLayout);
+        return scrollView;
+    }
+
+    private LinearLayout createHorizontalRow(View... views) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_HORIZONTAL);
+        row.setPadding(0, 8, 0, 8);
+        for (View v : views) row.addView(v);
+        return row;
+    }
+
+    private FlexboxLayout createFlexButtonRow(View... views) {
+        FlexboxLayout row = new FlexboxLayout(this);
+        row.setFlexDirection(FlexDirection.ROW);
+        row.setFlexWrap(FlexWrap.WRAP);
+        row.setJustifyContent(JustifyContent.CENTER);
+        row.setPadding(0, 8, 0, 8);
+
+        FlexboxLayout.LayoutParams btnParams = new FlexboxLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT);
+        btnParams.setMargins(8, 0, 8, 0);
+
+        for (View v : views) {
+            v.setLayoutParams(btnParams);
+            row.addView(v);
+        }
+
+        return row;
     }
 
     @SuppressWarnings("unchecked")
@@ -687,9 +730,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void playSolvedFeedback() {
-        if (!isMuted && winSfx != null) {
-            winSfx.start();
-        }
+        playSoundEffect(winSoundId);
 
         final String solveTimeFormatted = String.format(Locale.US, "%02d:%02d",
                 (solveTimeMillis / 1000) / 60,
@@ -763,6 +804,14 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private void setupObservers() {
+        mazeView.setColorProvider(viewModel::getColorAt);
+        mazeView.setShapeProvider(viewModel::getShapeAt);
+        mazeView.setGoalPositions(viewModel.getGoalPoints());
+
+        observeViewModel();
+    }
+
     @Override
     protected void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
@@ -787,17 +836,9 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (moveSfx != null) {
-            moveSfx.release();
-            moveSfx = null;
-        }
-        if (winSfx != null) {
-            winSfx.release();
-            winSfx = null;
-        }
-        if (badMoveSfx != null) {
-            badMoveSfx.release();
-            badMoveSfx = null;
+        if (soundPool != null) {
+            soundPool.release();
+            soundPool = null;
         }
     }
 
@@ -823,10 +864,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void playMoveSound() {
-        if (!isMuted && moveSfx != null) {
-            moveSfx.seekTo(0);
-            moveSfx.start();
-        }
+        playSoundEffect(moveSoundId);
     }
 
     private void playBackMoves() {
@@ -1000,12 +1038,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void applyMuteState() {
-        float volume = isMuted ? 0f : 1f;
-
-        if (moveSfx != null) moveSfx.setVolume(volume, volume);
-        if (winSfx != null) winSfx.setVolume(volume, volume);
-        if (badMoveSfx != null) badMoveSfx.setVolume(volume, volume);
-
         updateMuteIcon(isMuted);
+    }
+
+    private void playSoundEffect(int soundId) {
+        if (!isMuted && soundsLoaded && soundPool != null) {
+            soundPool.play(soundId, 1f, 1f, 1, 0, 1f);
+        }
     }
 }
