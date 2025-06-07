@@ -43,6 +43,7 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.core.widget.ImageViewCompat;
 import androidx.lifecycle.ViewModelProvider;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -62,9 +63,10 @@ public class MainActivity extends AppCompatActivity {
     private MediaPlayer moveSfx, winSfx, badMoveSfx;
     private Button resetBtn, undoBtn, replayBtn;
     private ImageButton pauseBtn, muteBtn, howToBtn;
+    private Spinner levelSpinner;
     private Runnable playbackRunnable;
     private final Handler timerHandler = new Handler(), playbackHandler = new Handler();
-//    private final Deque<Point> movePlaybackTrail = new ArrayDeque<>();
+    //    private final Deque<Point> movePlaybackTrail = new ArrayDeque<>();
     private long startTime = 0L, pausedTime = 0L, solveTimeMillis = 0L;
     private boolean
             gameButtonsEnabled = true,
@@ -85,47 +87,23 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-    @SuppressWarnings("unchecked")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        viewModel = new ViewModelProvider(
-                this,
-                new EyeballMazeViewModelFactory(getApplicationContext())
-        ).get(EyeballMazeViewModel.class);
+        setupViewModel(savedInstanceState);
 
         if (savedInstanceState != null) {
-            ArrayList<SerializablePoint> trailData =
-                    (ArrayList<SerializablePoint>) savedInstanceState.getSerializable("move_trail");
-
-            if (trailData != null) {
-                List<Point> points = new ArrayList<>();
-                for (SerializablePoint sp : trailData) {
-                    points.add(new Point(sp.x, sp.y));
-                }
-                viewModel.restorePlaybackTrail(points);
-            }
-
-            restoreTimerState(savedInstanceState);
-            isMuted = savedInstanceState.getBoolean("is_muted", false);
+            setGameButtonsEnabled(!isPaused);
         }
 
-        moveSfx = MediaPlayer.create(this, R.raw.move);
-        winSfx = MediaPlayer.create(this, R.raw.win);
-        badMoveSfx = MediaPlayer.create(this, R.raw.bad);
-
-        if (savedInstanceState == null) {
-            viewModel.initializeLevelFromPreferences();
-        }
+        setupSFX();
 
         boolean isLandscape = getResources().getConfiguration().orientation ==
                 android.content.res.Configuration.ORIENTATION_LANDSCAPE;
 
-        if (isLandscape) {
-            if (getSupportActionBar() != null) {
-                getSupportActionBar().hide();
-            }
+        if (isLandscape && getSupportActionBar() != null) {
+            getSupportActionBar().hide();
         }
 
         LinearLayout root = new LinearLayout(this);
@@ -137,9 +115,10 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
 
+        int tint = ContextCompat.getColor(this, R.color.iconTint);
+
         // MazeView
         mazeView = new MazeView(this);
-        int tint = ContextCompat.getColor(this, R.color.iconTint);
         Bitmap eyeballBmp = BitmapFactory.decodeResource(getResources(), R.drawable.eyeball);
         mazeView.setEyeballBitmap(eyeballBmp);
 
@@ -184,7 +163,7 @@ public class MainActivity extends AppCompatActivity {
         spinnerLabel.setTextSize(16);
         spinnerLabel.setPadding(0, 0, 16, 0);  // space between label and spinner
 
-        Spinner levelSpinner = new Spinner(this);
+        levelSpinner = new Spinner(this);
         LinearLayout.LayoutParams spinnerParams = new LinearLayout.LayoutParams(
                 LayoutParams.WRAP_CONTENT,
                 LayoutParams.WRAP_CONTENT
@@ -219,11 +198,6 @@ public class MainActivity extends AppCompatActivity {
             syncMazeViewFromViewModel();
 
             viewModel.removeLastFromTrail();
-        });
-        viewModel.canUndoLiveData().observe(this, canUndo -> {
-            if (undoBtn != null) {
-                undoBtn.setEnabled(gameButtonsEnabled && Boolean.TRUE.equals(canUndo));
-            }
         });
 
         muteBtn = new ImageButton(this);
@@ -268,11 +242,6 @@ public class MainActivity extends AppCompatActivity {
         ));
         replayBtn.setText(getString(R.string.replay));
         replayBtn.setOnClickListener(v -> playBackMoves());
-        viewModel.getCanReplayLiveData().observe(this, canReplay -> {
-            if (replayBtn != null) {
-                replayBtn.setEnabled(gameButtonsEnabled && Boolean.TRUE.equals(canReplay));
-            }
-        });
 
         pauseBtn = new ImageButton(this);
         pauseBtn.setLayoutParams(new LinearLayout.LayoutParams(
@@ -464,15 +433,9 @@ public class MainActivity extends AppCompatActivity {
         );
         root.addView(controls, controlsParams);
 
-        if (savedInstanceState != null) {
-            setGameButtonsEnabled(!isPaused);
-        }
-
         ColorStateList tintList = ContextCompat.getColorStateList(this, R.color.icon_tint);
         ImageViewCompat.setImageTintList(pauseBtn, tintList);
         ImageViewCompat.setImageTintList(muteBtn, tintList);
-
-        viewModel.getMoveCountLiveData().observe(this, count -> moveCounterTextView.setText(getString(R.string.moves_format, count)));
 
         // Set this layout as content view
         setContentView(root);
@@ -547,6 +510,61 @@ public class MainActivity extends AppCompatActivity {
 //        mazeView.setTypeProvider(viewModel::getTypeAt);
         mazeView.setGoalPositions(viewModel.getGoalPoints());
 
+        observeViewModel();
+    }
+
+    private void setupViewModel(Bundle savedInstanceState) {
+        viewModel = new ViewModelProvider(
+                this,
+                new EyeballMazeViewModelFactory(getApplicationContext())
+        ).get(EyeballMazeViewModel.class);
+
+        if (savedInstanceState != null) {
+            restoreViewModelState(savedInstanceState);
+        } else {
+            viewModel.initializeLevelFromPreferences();
+        }
+    }
+
+    private void setupSFX() {
+        moveSfx = MediaPlayer.create(this, R.raw.move);
+        winSfx = MediaPlayer.create(this, R.raw.win);
+        badMoveSfx = MediaPlayer.create(this, R.raw.bad);
+    }
+
+    @SuppressWarnings("unchecked")
+    private void restoreViewModelState(Bundle savedInstanceState) {
+        Serializable trailSerializable = savedInstanceState.getSerializable("move_trail");
+
+        if (trailSerializable instanceof ArrayList<?> trailList) {
+            boolean allAreSerializablePoints = trailList.stream()
+                    .allMatch(item -> item instanceof SerializablePoint);
+
+            if (allAreSerializablePoints) {
+                ArrayList<SerializablePoint> trailData = (ArrayList<SerializablePoint>) trailList;
+
+                List<Point> points = new ArrayList<>();
+                for (SerializablePoint sp : trailData) {
+                    points.add(new Point(sp.x, sp.y));
+                }
+
+                viewModel.restorePlaybackTrail(points);
+            }
+        }
+
+        restoreTimerState(savedInstanceState);
+        isMuted = savedInstanceState.getBoolean("is_muted", false);
+    }
+
+    private void observeViewModel() {
+        observeMazePosition();
+        observeMazeStatus();
+        observeMoveFeedback();
+        observeGameState();
+        observeButtonStates();
+    }
+
+    private void observeMazePosition() {
         viewModel.getEyeballRowLiveData().observe(this, row -> {
             Integer col = viewModel.getEyeballColLiveData().getValue();
             if (col != null) {
@@ -563,10 +581,17 @@ public class MainActivity extends AppCompatActivity {
         });
 
         viewModel.getEyeballDirLiveData().observe(this, mazeView::setDirection);
+    }
+
+    private void observeMazeStatus() {
         viewModel.isCurrentGoalLiveData().observe(this, isGoal -> {
             mazeView.setCurrentSquareIsGoal(isGoal);
             mazeView.invalidate();
         });
+    }
+
+    private void observeMoveFeedback() {
+        viewModel.getMoveCountLiveData().observe(this, count -> moveCounterTextView.setText(getString(R.string.moves_format, count)));
 
         viewModel.getMoveHappenedLiveData().observe(this, happened -> {
             if (Boolean.TRUE.equals(happened)) {
@@ -575,93 +600,137 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        viewModel.getMoveStatusLiveData().observe(this, message -> {
-            if (message != null && message != Message.OK) {
-                Snackbar snackbar = Snackbar.make(
-                        findViewById(android.R.id.content),
-                        getString(R.string.move_blocked, message.name()),
-                        Snackbar.LENGTH_SHORT
-                );
-                // Move position
-                View snackbarView = snackbar.getView();
-                FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) snackbarView.getLayoutParams();
-                params.gravity = Gravity.CENTER;
-                params.width = FrameLayout.LayoutParams.WRAP_CONTENT;
-                snackbarView.setLayoutParams(params);
-                snackbar.show();
+        viewModel.getMoveStatusLiveData().observe(this, this::showMoveStatusMsg);
+    }
 
-                viewModel.clearMoveStatusLiveData();
+    private void showMoveStatusMsg(Message message) {
+        if (message == null || message == Message.OK) return;
+
+        Snackbar snackbar = Snackbar.make(
+                findViewById(android.R.id.content),
+                getString(R.string.move_blocked, message.name()),
+                Snackbar.LENGTH_SHORT
+        );
+
+        View snackbarView = snackbar.getView();
+        FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) snackbarView.getLayoutParams();
+        params.gravity = Gravity.CENTER;
+        params.width = FrameLayout.LayoutParams.WRAP_CONTENT;
+        snackbarView.setLayoutParams(params);
+        snackbar.show();
+
+        viewModel.clearMoveStatusLiveData();
+    }
+
+    private void observeGameState() {
+        viewModel.getGoalsRemainingLiveData().observe(this, this::handleGoalsRemaining);
+    }
+
+    private void handleGoalsRemaining(int remaining) {
+        if (goalsStatusTextView == null) return;
+
+        if (remaining <= 0) {
+            if (isSolved) {
+                handleAlreadySolved();
+            } else {
+                handleLevelSolved();
+            }
+        }
+
+        updateGoalStatusText(remaining);
+    }
+
+    private void handleAlreadySolved() {
+        goalsStatusTextView.setText(getString(R.string.solved));
+        replayBtn.setEnabled(viewModel.getPlaybackTrail().size() > 1);
+        pauseBtn.setEnabled(false);
+        setGameButtonsEnabled(false);
+    }
+
+    private void handleLevelSolved() {
+        isSolved = true;
+        solveTimeMillis = isPaused ? pausedTime - startTime : System.currentTimeMillis() - startTime;
+        updateTimerDisplay(solveTimeMillis);
+        goalsStatusTextView.setText(getString(R.string.solved));
+
+        playSolvedFeedback();
+        showLevelCompleteMsg();
+        freezeGameAfterSolve();
+    }
+
+    private void playSolvedFeedback() {
+        if (!isMuted && winSfx != null) {
+            winSfx.start();
+        }
+
+        final String solveTimeFormatted = String.format(Locale.US, "%02d:%02d",
+                (solveTimeMillis / 1000) / 60,
+                (solveTimeMillis / 1000) % 60
+        );
+
+        String message = getString(R.string.solved) + "\n" + getString(R.string.time_format, solveTimeFormatted);
+        Toast.makeText(MainActivity.this, message, Toast.LENGTH_SHORT).show();
+    }
+
+    private void showLevelCompleteMsg() {
+        Snackbar snackbar = Snackbar.make(
+                findViewById(android.R.id.content),
+                getString(R.string.level_complete),
+                Snackbar.LENGTH_LONG
+        );
+
+        snackbar.setAction(getString(R.string.next), v -> {
+            int next = viewModel.getCurrentLevelIndex() + 1;
+            if (next < viewModel.getLevelCount()) {
+                cancelPlaybackAndJumpToEnd();
+                viewModel.setLevel(next);
+                levelSpinner.setSelection(viewModel.getCurrentLevelIndex());
+                goToNextLevel();
+            } else {
+                Toast endToast = Toast.makeText(
+                        MainActivity.this,
+                        getString(R.string.no_more_levels),
+                        Toast.LENGTH_LONG
+                );
+                endToast.show();
+            }
+
+            restoreTimerState();
+        });
+
+        snackbar.show();
+    }
+
+    private void freezeGameAfterSolve() {
+        timerHandler.removeCallbacks(timerRunnable);
+        isPaused = true;
+        setGameButtonsEnabled(false);
+        hasTimerStarted = false;
+        pauseBtn.setEnabled(false);
+    }
+
+    private void updateGoalStatusText(int remaining) {
+        String goalText = getResources().getQuantityString(R.plurals.goals_remaining, remaining, remaining);
+        goalsStatusTextView.setText(goalText);
+
+        Drawable flagIcon = AppCompatResources.getDrawable(this, R.drawable.baseline_flag_circle_24);
+        if (flagIcon != null) {
+            flagIcon.setTint(ContextCompat.getColor(this, R.color.iconTint));
+            flagIcon.setBounds(0, 0, flagIcon.getIntrinsicWidth(), flagIcon.getIntrinsicHeight());
+            goalsStatusTextView.setCompoundDrawables(flagIcon, null, flagIcon, null);
+        }
+    }
+
+    private void observeButtonStates() {
+        viewModel.canUndoLiveData().observe(this, canUndo -> {
+            if (undoBtn != null) {
+                undoBtn.setEnabled(gameButtonsEnabled && Boolean.TRUE.equals(canUndo));
             }
         });
 
-        viewModel.getGoalsRemainingLiveData().observe(this, remaining -> {
-            if (goalsStatusTextView == null) return;
-
-            if (remaining <= 0) {
-                if (isSolved) {
-                    goalsStatusTextView.setText(getString(R.string.solved));
-                    replayBtn.setEnabled(viewModel.getPlaybackTrail().size() > 1);
-                    pauseBtn.setEnabled(false);
-                    setGameButtonsEnabled(false);
-                    return;
-                }
-
-                isSolved = true;
-                solveTimeMillis = isPaused ? pausedTime - startTime : System.currentTimeMillis() - startTime;
-                updateTimerDisplay(solveTimeMillis);
-                goalsStatusTextView.setText(getString(R.string.solved));
-
-                if (!isMuted && winSfx != null) {
-                    winSfx.start();
-                }
-
-                final String solveTimeFormatted = String.format(Locale.US, "%02d:%02d",
-                        (solveTimeMillis / 1000) / 60,
-                        (solveTimeMillis / 1000) % 60
-                );
-
-                String message = getString(R.string.solved) + "\n" + getString(R.string.time_format, solveTimeFormatted);
-                Toast.makeText(MainActivity.this, message, Toast.LENGTH_SHORT).show();
-
-                Snackbar snackbar = Snackbar.make(
-                        findViewById(android.R.id.content),
-                        getString(R.string.level_complete),
-                        Snackbar.LENGTH_LONG
-                );
-
-                snackbar.setAction(getString(R.string.next), v -> {
-                    int next = viewModel.getCurrentLevelIndex() + 1;
-                    if (next < viewModel.getLevelCount()) {
-                        cancelPlaybackAndJumpToEnd();
-                        viewModel.setLevel(next);
-                        levelSpinner.setSelection(viewModel.getCurrentLevelIndex());
-                        goToNextLevel();
-                    } else {
-                        Toast endToast = Toast.makeText(MainActivity.this, getString(R.string.no_more_levels), Toast.LENGTH_LONG);
-                        endToast.show();
-                    }
-
-                    restoreTimerState();
-                });
-
-                snackbar.show();
-
-                timerHandler.removeCallbacks(timerRunnable);
-                isPaused = true;
-                setGameButtonsEnabled(false);
-                hasTimerStarted = false;
-                pauseBtn.setEnabled(false);
-                return;
-            }
-
-            String goalText = getResources().getQuantityString(R.plurals.goals_remaining, remaining, remaining);
-            goalsStatusTextView.setText(goalText);
-
-            Drawable flagIcon = AppCompatResources.getDrawable(this, R.drawable.baseline_flag_circle_24);
-            if (flagIcon != null) {
-                flagIcon.setTint(ContextCompat.getColor(this, R.color.iconTint));
-                flagIcon.setBounds(0, 0, flagIcon.getIntrinsicWidth(), flagIcon.getIntrinsicHeight());
-                goalsStatusTextView.setCompoundDrawables(flagIcon, null, flagIcon, null);
+        viewModel.getCanReplayLiveData().observe(this, canReplay -> {
+            if (replayBtn != null) {
+                replayBtn.setEnabled(gameButtonsEnabled && Boolean.TRUE.equals(canReplay));
             }
         });
     }
