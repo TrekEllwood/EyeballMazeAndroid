@@ -22,7 +22,6 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import android.graphics.Point;
 import android.graphics.Bitmap;
@@ -34,7 +33,6 @@ import com.google.android.flexbox.FlexDirection;
 import com.google.android.flexbox.FlexWrap;
 import com.google.android.flexbox.FlexboxLayout;
 import com.google.android.flexbox.JustifyContent;
-import com.google.android.material.snackbar.Snackbar;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -53,6 +51,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import nz.ac.ara.tre46.eyeballmaze.enums.Message;
 import nz.ac.ara.tre46.eyeballmaze.ui.TutorialVideoDialogFragment;
+import nz.ac.ara.tre46.eyeballmaze.utils.SnackbarUtils;
+import nz.ac.ara.tre46.eyeballmaze.utils.ToastUtils;
 import nz.ac.ara.tre46.eyeballmaze.viewmodel.EyeballMazeViewModel;
 import nz.ac.ara.tre46.eyeballmaze.viewmodel.EyeballMazeViewModelFactory;
 import nz.ac.ara.tre46.eyeballmaze.view.MazeView;
@@ -677,18 +677,7 @@ public class MainActivity extends AppCompatActivity {
     private void showMoveStatusMsg(Message message) {
         if (message == null || message == Message.OK) return;
 
-        Snackbar snackbar = Snackbar.make(
-                findViewById(android.R.id.content),
-                getString(R.string.move_blocked, message.name()),
-                Snackbar.LENGTH_SHORT
-        );
-
-        View snackbarView = snackbar.getView();
-        FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) snackbarView.getLayoutParams();
-        params.gravity = Gravity.CENTER;
-        params.width = FrameLayout.LayoutParams.WRAP_CONTENT;
-        snackbarView.setLayoutParams(params);
-        snackbar.show();
+        SnackbarUtils.showMoveBlocked(findViewById(android.R.id.content), message.name());
 
         viewModel.clearMoveStatusLiveData();
     }
@@ -737,18 +726,11 @@ public class MainActivity extends AppCompatActivity {
                 (solveTimeMillis / 1000) % 60
         );
 
-        String message = getString(R.string.solved) + "\n" + getString(R.string.time_format, solveTimeFormatted);
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+        ToastUtils.showSolvedMessage(this, solveTimeFormatted);
     }
 
     private void showLevelCompleteMsg() {
-        Snackbar snackbar = Snackbar.make(
-                findViewById(android.R.id.content),
-                getString(R.string.level_complete),
-                Snackbar.LENGTH_LONG
-        );
-
-        snackbar.setAction(getString(R.string.next), v -> {
+        SnackbarUtils.showLevelComplete(findViewById(android.R.id.content), getString(R.string.next), v -> {
             int next = viewModel.getCurrentLevelIndex() + 1;
             if (next < viewModel.getLevelCount()) {
                 cancelPlaybackAndJumpToEnd();
@@ -756,18 +738,10 @@ public class MainActivity extends AppCompatActivity {
                 levelSpinner.setSelection(viewModel.getCurrentLevelIndex());
                 goToNextLevel();
             } else {
-                Toast endToast = Toast.makeText(
-                        this,
-                        getString(R.string.no_more_levels),
-                        Toast.LENGTH_LONG
-                );
-                endToast.show();
+                ToastUtils.showNoMoreLevels(this);
             }
-
             restoreTimerState();
         });
-
-        snackbar.show();
     }
 
     private void freezeGameAfterSolve() {
