@@ -24,8 +24,6 @@ import android.widget.Spinner;
 import android.widget.TextView;
 
 import android.graphics.Point;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 
 import androidx.core.graphics.Insets;
 
@@ -56,6 +54,7 @@ import nz.ac.ara.tre46.eyeballmaze.utils.ToastUtils;
 import nz.ac.ara.tre46.eyeballmaze.viewmodel.EyeballMazeViewModel;
 import nz.ac.ara.tre46.eyeballmaze.viewmodel.EyeballMazeViewModelFactory;
 import nz.ac.ara.tre46.eyeballmaze.view.MazeView;
+import nz.ac.ara.tre46.eyeballmaze.view.MazeViewInitializer;
 import nz.ac.ara.tre46.eyeballmaze.utils.SerializablePoint;
 
 public class MainActivity extends AppCompatActivity {
@@ -114,7 +113,22 @@ public class MainActivity extends AppCompatActivity {
         final boolean isLandscape = isLandscapeMode();
 
         LinearLayout root = setupLayout(isLandscape);
-        mazeView = createMazeView();
+        mazeView = MazeViewInitializer.create(this, viewModel, new MazeViewInitializer.MoveCallback() {
+            @Override
+            public void onValidMove(int row, int col) {
+                viewModel.addMoveToTrail(new Point(col, row));
+                if (!viewModel.isTimerStarted()) {
+                    viewModel.startTimer();
+                    setGameButtonsEnabled(true);
+                }
+            }
+
+            @Override
+            public void onInvalidMove(int row, int col) {
+                playSoundEffect(badSoundId);
+                mazeView.setFailedMoveAt(row, col);
+            }
+        });
 
         setupControlButtonTints();
         setupStatusTextViews();
@@ -233,39 +247,6 @@ public class MainActivity extends AppCompatActivity {
         return root;
     }
 
-    private MazeView createMazeView() {
-        mazeView = new MazeView(this);
-        Bitmap eyeballBmp = BitmapFactory.decodeResource(getResources(), R.drawable.eyeball);
-        mazeView.setEyeballBitmap(eyeballBmp);
-
-        mazeView.setOnCellTapListener((row, col) -> {
-            if (isSolved) return;
-
-            if (viewModel.canMoveTo(row, col)) {
-                handleValidMove(row, col);
-            } else {
-                handleInvalidMove(row, col);
-            }
-
-            viewModel.clickToMoveToward(row, col); // Handles messages
-        });
-
-        return mazeView;
-    }
-
-    private void handleValidMove(int row, int col) {
-        viewModel.addMoveToTrail(new Point(col, row));
-        if (!viewModel.isTimerStarted()) {
-            viewModel.startTimer();
-            setGameButtonsEnabled(true);
-        }
-    }
-
-    private void handleInvalidMove(int row, int col) {
-        playSoundEffect(badSoundId);
-        mazeView.setFailedMoveAt(row, col);
-    }
-
     private void resizeMazeView(LinearLayout root, View controls, boolean isLandscape) {
         // Force square mazeView
         mazeView.post(() -> {
@@ -377,7 +358,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void createPauseButton(int tint) {
         pauseBtn = new ImageButton(this);
-        initialPauseBtnImage();
+        setPauseIcon();
         pauseBtn.setColorFilter(tint, PorterDuff.Mode.SRC_IN);
         pauseBtn.setEnabled(false);
         pauseBtn.setBackground(null);
@@ -394,7 +375,7 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void initialPauseBtnImage() {
+    private void setPauseIcon() {
         pauseBtn.setImageResource(R.drawable.baseline_pause_circle_24);
         pauseBtn.setContentDescription(getString(R.string.pause));
     }
@@ -406,7 +387,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void resetPausedStateUI() {
-        initialPauseBtnImage();
+        setPauseIcon();
         mazeView.setVisibility(View.VISIBLE);
     }
 
@@ -414,13 +395,9 @@ public class MainActivity extends AppCompatActivity {
         if (pauseBtn == null) return;
 
         if (isPaused) {
-            pauseBtn.setImageResource(R.drawable.baseline_play_circle_24);
-            pauseBtn.setContentDescription(getString(R.string.resume));
-            mazeView.setVisibility(View.INVISIBLE);
+            setPausedStateUI();
         } else {
-            pauseBtn.setImageResource(R.drawable.baseline_pause_circle_24);
-            pauseBtn.setContentDescription(getString(R.string.pause));
-            mazeView.setVisibility(View.VISIBLE);
+            resetPausedStateUI();
         }
     }
 
