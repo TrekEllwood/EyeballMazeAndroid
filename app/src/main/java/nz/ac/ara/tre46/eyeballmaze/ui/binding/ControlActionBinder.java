@@ -7,6 +7,7 @@ import androidx.fragment.app.FragmentActivity;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import nz.ac.ara.tre46.eyeballmaze.audio.SoundManager;
 import nz.ac.ara.tre46.eyeballmaze.ui.components.ControlPanelBuilder;
 import nz.ac.ara.tre46.eyeballmaze.ui.dialogs.TutorialVideoDialogFragment;
 import nz.ac.ara.tre46.eyeballmaze.view.MazeView;
@@ -28,16 +29,20 @@ public class ControlActionBinder {
     private final EyeballMazeViewModel viewModel;
     private final MazeView mazeView;
     private final Callback callback;
-    private boolean isMuted;
+    private final SoundManager soundManager;
 
-    public ControlActionBinder(FragmentActivity activity, ControlPanelBuilder controls, EyeballMazeViewModel viewModel,
-                               MazeView mazeView, Callback callback, boolean isMutedInitially) {
+    public ControlActionBinder(FragmentActivity activity,
+                               ControlPanelBuilder controls,
+                               EyeballMazeViewModel viewModel,
+                               MazeView mazeView,
+                               Callback callback,
+                               SoundManager soundManager) {
         this.activity = activity;
         this.controls = controls;
         this.viewModel = viewModel;
         this.mazeView = mazeView;
         this.callback = callback;
-        this.isMuted = isMutedInitially;
+        this.soundManager = soundManager;
     }
 
     public void bind() {
@@ -87,8 +92,8 @@ public class ControlActionBinder {
 
     private void bindMuteButton() {
         controls.muteBtn.setOnClickListener(v -> {
-            isMuted = !isMuted;
-            callback.onToggleMute(isMuted);
+            boolean newMuted = !soundManager.isMuted();
+            callback.onToggleMute(newMuted);
         });
     }
 

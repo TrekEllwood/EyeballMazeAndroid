@@ -47,10 +47,7 @@ public class MainActivity extends AppCompatActivity {
     private SoundManager soundManager;
     private Runnable playbackRunnable;
     private final Handler playbackHandler = new Handler();
-    private boolean
-            gameButtonsEnabled = true,
-            isMuted = false,
-            isPlayingBack = false;
+    private boolean gameButtonsEnabled = true, isPlayingBack = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -191,12 +188,12 @@ public class MainActivity extends AppCompatActivity {
                     @Override public void onPauseGame() { setButtonsExceptPauseEnabled(false); }
                     @Override public void onResumeGame() { setButtonsExceptPauseEnabled(true); }
                     @Override public void onToggleMute(boolean muted) {
-                        isMuted = muted;
-                        applyMuteState();
+                        soundManager.setMuted(muted);
+                        updateMuteIcon(muted);
                     }
                     @Override public void onCancelPlayback() { cancelPlaybackAndJumpToEnd(); }
                 },
-                isMuted
+                soundManager
         );
         controlActionBinder.bind();
     }
@@ -289,7 +286,8 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        isMuted = savedInstanceState.getBoolean("is_muted", false);
+        boolean muted = savedInstanceState.getBoolean("is_muted", false);
+        soundManager.setMuted(muted);
     }
 
     private void restoreAppState(Bundle savedInstanceState) {
@@ -303,7 +301,7 @@ public class MainActivity extends AppCompatActivity {
 
             restorePersistentAppState(savedInstanceState);
             restoreTimerState(savedInstanceState);
-            applyMuteState();
+            updateMuteIcon(soundManager.isMuted());
         }
     }
 
@@ -381,7 +379,7 @@ public class MainActivity extends AppCompatActivity {
         }
         outState.putSerializable("move_trail", serializableTrail);
         outState.putBoolean("is_solved", viewModel.isSolved());
-        outState.putBoolean("is_muted", isMuted);
+        outState.putBoolean("is_muted", soundManager.isMuted());
         viewModel.saveTimerStateToBundle(outState);
     }
 
@@ -553,11 +551,6 @@ public class MainActivity extends AppCompatActivity {
 
         controlPanel.muteBtn.setImageResource(icon);
         controlPanel.muteBtn.setContentDescription(description);
-    }
-
-    private void applyMuteState() {
-        soundManager.setMuted(isMuted);
-        updateMuteIcon(isMuted);
     }
 
     @Override
