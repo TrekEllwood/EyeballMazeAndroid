@@ -388,8 +388,7 @@ public class MainActivity extends AppCompatActivity {
                 viewModel.resumeTimer();
                 setButtonsExceptPauseEnabled(true);
             } else {
-                viewModel.pauseTimer();
-                setButtonsExceptPauseEnabled(false);
+                applyPauseState();
                 cancelPlaybackAndJumpToEnd();
             }
         });
@@ -431,6 +430,11 @@ public class MainActivity extends AppCompatActivity {
         if (pauseBtn != null) {
             pauseBtn.setEnabled(gameButtonsEnabled && (hasStarted || isPaused) && !isSolved);
         }
+    }
+
+    private void applyPauseState() {
+        viewModel.pauseTimer();
+        setButtonsExceptPauseEnabled(false);
     }
 
     private LinearLayout setupLevelSpinner() {
@@ -775,21 +779,29 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void observeButtonStates() {
+        observeUndoButtonState();
+        observeReplayButtonState();
+        observePauseButtonState();
+    }
+
+    private void observeUndoButtonState() {
         viewModel.canUndoLiveData().observe(this, canUndo -> {
             if (undoBtn != null) {
                 undoBtn.setEnabled(gameButtonsEnabled && Boolean.TRUE.equals(canUndo));
             }
         });
+    }
 
+    private void observeReplayButtonState() {
         viewModel.getCanReplayLiveData().observe(this, canReplay -> {
             if (replayBtn != null) {
                 replayBtn.setEnabled(gameButtonsEnabled && Boolean.TRUE.equals(canReplay));
             }
         });
+    }
 
-        viewModel.getIsTimerStartedLiveData().observe(this, hasStarted -> {
-            updatePauseButtonEnabledState();
-        });
+    private void observePauseButtonState() {
+        viewModel.getIsTimerStartedLiveData().observe(this, hasStarted -> updatePauseButtonEnabledState());
 
         viewModel.getIsPausedLiveData().observe(this, isPaused -> {
             updatePauseButtonUI(Boolean.TRUE.equals(isPaused));
@@ -827,15 +839,6 @@ public class MainActivity extends AppCompatActivity {
         outState.putBoolean("is_solved", isSolved);
         outState.putBoolean("is_muted", isMuted);
         viewModel.saveTimerStateToBundle(outState);
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (soundPool != null) {
-            soundPool.release();
-            soundPool = null;
-        }
     }
 
     private void syncMazeViewFromViewModel() {
@@ -1013,6 +1016,17 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-        viewModel.pauseTimer();
+        if (!isChangingConfigurations()) {
+            applyPauseState();
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (soundPool != null) {
+            soundPool.release();
+            soundPool = null;
+        }
     }
 }
