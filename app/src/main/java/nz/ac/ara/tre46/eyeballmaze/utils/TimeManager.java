@@ -83,7 +83,6 @@ public class TimeManager {
     }
 
     public void setSolved(TimeUpdateListener listener) {
-        long now = System.currentTimeMillis();
         solveTimeMillis = getElapsedTime();
         listener.onTimeUpdate(solveTimeMillis);
         stopTimer();
