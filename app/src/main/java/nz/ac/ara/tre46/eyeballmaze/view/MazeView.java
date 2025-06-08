@@ -9,6 +9,7 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.RectF;
 import android.graphics.Point;
+import android.os.Handler;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
@@ -27,36 +28,25 @@ import nz.ac.ara.tre46.eyeballmaze.enums.Direction;
 import nz.ac.ara.tre46.eyeballmaze.R;
 
 public class MazeView extends View {
-    private int eyeballRow = -1;
-    private int eyeballCol = -1;
-    private boolean currentGoal = false;
-    private int boardRows = 0;
-    private int boardCols = 0;
-    private int failedRow = -1;
-    private int failedCol = -1;
+    private int eyeballRow = -1, eyeballCol = -1, boardRows = 0, boardCols = 0, failedRow = -1, failedCol = -1;
+    private boolean currentGoal = false, isTouchEnabled = true;
 
     private final Paint linePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint fillPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint goalPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint goalTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint failedPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-
-    private final android.os.Handler handler = new android.os.Handler();
+    private final Handler handler = new Handler();
     private Runnable clearFailedRunnable;
-
     private final Path reusablePath = new Path();
     private final RectF reusableGoalRect = new RectF();
-
     private final Set<String> goalKeys = new HashSet<>();
     private Bitmap eyeballBitmap = null;
     private final Matrix matrix = new Matrix();
-
     private float cellW, cellH;
     private OnCellTapListener tapListener;
-
     private ColorProvider colorProvider;
     private ShapeProvider shapeProvider;
-
     private Bitmap goalLabelIcon;
 
     public MazeView(Context context) {
@@ -337,8 +327,14 @@ public class MazeView extends View {
         }
     }
 
+    public void setTouchEnabled(boolean enabled) {
+        isTouchEnabled = enabled;
+    }
+
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+        if (!isTouchEnabled) return false;
+
         if (boardRows == 0 || boardCols == 0 || tapListener == null) return false;
         if (event.getAction() != MotionEvent.ACTION_DOWN) return false;
 
@@ -372,7 +368,6 @@ public class MazeView extends View {
     @Override
     public boolean performClick() {
         super.performClick();
-        // Could do something here for accessibility
         return true;
     }
 

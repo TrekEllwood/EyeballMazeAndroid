@@ -78,8 +78,19 @@ public class TimeManager {
         return System.currentTimeMillis() - startTime;
     }
 
-    public void setSolved() {
+    public boolean isSolved() {
+        return solveTimeMillis > 0;
+    }
+
+    public void setSolved(TimeUpdateListener listener) {
+        long now = System.currentTimeMillis();
         solveTimeMillis = getElapsedTime();
+        listener.onTimeUpdate(solveTimeMillis);
+        stopTimer();
+    }
+
+    public void clearSolved() {
+        solveTimeMillis = 0L;
         stopTimer();
     }
 

@@ -1,10 +1,11 @@
-package nz.ac.ara.tre46.eyeballmaze.view;
+package nz.ac.ara.tre46.eyeballmaze.ui.components;
 
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 
 import nz.ac.ara.tre46.eyeballmaze.R;
+import nz.ac.ara.tre46.eyeballmaze.view.MazeView;
 import nz.ac.ara.tre46.eyeballmaze.viewmodel.EyeballMazeViewModel;
 
 public class MazeViewInitializer {    public interface MoveCallback {

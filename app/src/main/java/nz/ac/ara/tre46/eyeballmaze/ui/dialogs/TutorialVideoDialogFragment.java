@@ -1,4 +1,4 @@
-package nz.ac.ara.tre46.eyeballmaze.ui;
+package nz.ac.ara.tre46.eyeballmaze.ui.dialogs;
 
 import android.app.Dialog;
 import android.content.DialogInterface;

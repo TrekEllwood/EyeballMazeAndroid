@@ -1,6 +1,7 @@
 package nz.ac.ara.tre46.eyeballmaze.viewmodel;
 
 import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MediatorLiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
@@ -45,6 +46,7 @@ public class EyeballMazeViewModel extends ViewModel {
     private final MutableLiveData<Boolean> isPausedLiveData = new MutableLiveData<>(false);
     private final MutableLiveData<Long> elapsedTimeLiveData = new MutableLiveData<>();
     private final MutableLiveData<Boolean> isTimerStartedLiveData = new MutableLiveData<>(false);
+    private final MutableLiveData<Boolean> isSolvedLiveData = new MutableLiveData<>(false);
 
     public EyeballMazeViewModel(Context context, IGame gameInstance) {
         this.context = context.getApplicationContext();
@@ -59,6 +61,26 @@ public class EyeballMazeViewModel extends ViewModel {
 
     public LiveData<Integer> getEyeballColLiveData() {
         return colLiveData;
+    }
+
+    public LiveData<Point> getEyeballPositionLiveData() {
+        MediatorLiveData<Point> posLiveData = new MediatorLiveData<>();
+
+        posLiveData.addSource(getEyeballRowLiveData(), row -> {
+            Integer col = getEyeballColLiveData().getValue();
+            if (col != null && row != null) {
+                posLiveData.setValue(new Point(col, row));
+            }
+        });
+
+        posLiveData.addSource(getEyeballColLiveData(), col -> {
+            Integer row = getEyeballRowLiveData().getValue();
+            if (col != null && row != null) {
+                posLiveData.setValue(new Point(col, row));
+            }
+        });
+
+        return posLiveData;
     }
 
     public LiveData<Direction> getEyeballDirLiveData() {
@@ -103,6 +125,10 @@ public class EyeballMazeViewModel extends ViewModel {
 
     public LiveData<Boolean> getIsTimerStartedLiveData() {
         return isTimerStartedLiveData;
+    }
+
+    public LiveData<Boolean> getIsSolvedLiveData() {
+        return isSolvedLiveData;
     }
 
     public void clearMoveStatusLiveData() {
@@ -176,15 +202,13 @@ public class EyeballMazeViewModel extends ViewModel {
     }
 
     public void setLevel(int index) {
-        if (index < 0 || index >= game.getLevelCount()) {
-            return;
-        }
-
+        if (index < 0 || index >= game.getLevelCount()) return;
         if (index == currentLevelIndex) return; // Prevent redundant reload
 
         game.setLevel(index);
         currentLevelIndex = index;
         moveCountLiveData.setValue(0);
+        clearSolved();
         resetUndo();
         syncGameState();
 
@@ -302,7 +326,19 @@ public class EyeballMazeViewModel extends ViewModel {
     }
 
     public void markSolved() {
-        timeManager.setSolved();
+        if (!isSolved()) {
+            timeManager.setSolved(elapsedTimeLiveData::postValue);
+            isSolvedLiveData.setValue(true);
+        }
+    }
+
+    public void clearSolved() {
+        timeManager.clearSolved();
+        isSolvedLiveData.setValue(false);
+    }
+
+    public boolean isSolved() {
+        return timeManager.isSolved();
     }
 
     public long getSolveTimeMillis() {
