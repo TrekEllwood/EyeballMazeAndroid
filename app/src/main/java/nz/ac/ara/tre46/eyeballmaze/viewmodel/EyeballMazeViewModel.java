@@ -20,10 +20,16 @@ import nz.ac.ara.tre46.eyeballmaze.enums.Direction;
 import nz.ac.ara.tre46.eyeballmaze.enums.Message;
 import nz.ac.ara.tre46.eyeballmaze.enums.Shape;
 import nz.ac.ara.tre46.eyeballmaze.interfaces.IGame;
+import nz.ac.ara.tre46.eyeballmaze.utils.TimeManager;
 
 public class EyeballMazeViewModel extends ViewModel {
     private final IGame game;
     private final Context context;
+    private final Deque<Object> undoStack = new ArrayDeque<>();
+    private final Deque<Point> movePlaybackTrail = new ArrayDeque<>();
+    private static final int MAX_UNDO = 10;
+    private int currentLevelIndex = 0;
+    private final TimeManager timeManager = new TimeManager();
 
     private final MutableLiveData<Integer> rowLiveData = new MutableLiveData<>();
     private final MutableLiveData<Integer> colLiveData = new MutableLiveData<>();
@@ -35,11 +41,7 @@ public class EyeballMazeViewModel extends ViewModel {
     private final MutableLiveData<Integer> moveCountLiveData = new MutableLiveData<>(0);
     private final MutableLiveData<Boolean> moveHappenedLiveData = new MutableLiveData<>(false);
     private final MutableLiveData<Boolean> canReplayLiveData = new MutableLiveData<>(false);
-
-    private final Deque<Object> undoStack = new ArrayDeque<>();
-    private final Deque<Point> movePlaybackTrail = new ArrayDeque<>();
-    private static final int MAX_UNDO = 10;
-    private int currentLevelIndex = 0;
+    private final MutableLiveData<Long> elapsedTimeLiveData = new MutableLiveData<>();
 
     public EyeballMazeViewModel(Context context, IGame gameInstance) {
         this.context = context.getApplicationContext();
@@ -86,6 +88,10 @@ public class EyeballMazeViewModel extends ViewModel {
 
     public LiveData<Boolean> getCanReplayLiveData() {
         return canReplayLiveData;
+    }
+
+    public LiveData<Long> getElapsedTimeLiveData() {
+        return elapsedTimeLiveData;
     }
 
     public void clearMoveStatusLiveData() {
@@ -259,5 +265,55 @@ public class EyeballMazeViewModel extends ViewModel {
         movePlaybackTrail.clear();
         movePlaybackTrail.addAll(trail);
         updateCanReplay(movePlaybackTrail);
+    }
+
+    public void startTimer() {
+        timeManager.startTimer(elapsedTimeLiveData::postValue);
+    }
+
+    public void pauseTimer() {
+        timeManager.pauseTimer();
+    }
+
+    public void resumeTimer() {
+        timeManager.resumeTimer(elapsedTimeLiveData::postValue);
+    }
+
+    public void stopTimer() {
+        timeManager.stopTimer();
+    }
+
+    public void markSolved() {
+        timeManager.setSolved();
+    }
+
+    public long getSolveTimeMillis() {
+        return timeManager.getSolveTimeMillis();
+    }
+
+    public boolean isPaused() {
+        return timeManager.isPaused();
+    }
+
+    public boolean hasTimerStarted() {
+        return timeManager.hasStarted();
+    }
+
+    public void saveTimerStateToBundle(android.os.Bundle outState) {
+        outState.putLong("start_time", timeManager.getStartTime());
+        outState.putBoolean("has_timer_started", timeManager.hasStarted());
+        outState.putBoolean("is_paused", timeManager.isPaused());
+        outState.putLong("paused_time", timeManager.getPausedTime());
+        outState.putLong("solve_time_millis", timeManager.getSolveTimeMillis());
+    }
+
+    public void restoreTimerStateFromBundle(android.os.Bundle savedInstanceState) {
+        long startTime = savedInstanceState.getLong("start_time", 0L);
+        boolean hasStarted = savedInstanceState.getBoolean("has_timer_started", false);
+        boolean isPaused = savedInstanceState.getBoolean("is_paused", false);
+        long pausedTime = savedInstanceState.getLong("paused_time", 0L);
+        long solveTimeMillis = savedInstanceState.getLong("solve_time_millis", 0L);
+
+        timeManager.restoreState(startTime, hasStarted, isPaused, pausedTime, solveTimeMillis);
     }
 }
