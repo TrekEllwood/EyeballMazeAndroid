@@ -73,8 +73,7 @@ public class MainActivity extends AppCompatActivity {
             isMuted = false,
             isSolved = false,
             isPlayingBack = false,
-            soundsLoaded = false,
-            isSystemPause = false;
+            soundsLoaded = false;
     private int moveSoundId, winSoundId, badSoundId;
     private static final float TEXT_SIZE = 16f;
 
@@ -112,7 +111,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setupLayoutAndViews(Bundle savedInstanceState) {
-        boolean isLandscape = isLandscapeMode();
+        final boolean isLandscape = isLandscapeMode();
 
         LinearLayout root = setupLayout(isLandscape);
         mazeView = createMazeView();
@@ -194,9 +193,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setupControlButtonTints() {
-        ColorStateList tintList = ContextCompat.getColorStateList(this, R.color.iconTint);
+        ColorStateList tintList = ContextCompat.getColorStateList(this, R.color.icon_tint);
         assert tintList != null;
-        int tint = tintList.getDefaultColor();
+        final int tint = tintList.getDefaultColor();
 
         createControlButtons(tint);
         applyMuteState();
@@ -256,10 +255,9 @@ public class MainActivity extends AppCompatActivity {
 
     private void handleValidMove(int row, int col) {
         viewModel.addMoveToTrail(new Point(col, row));
-        if (!viewModel.hasTimerStarted()) {
+        if (!viewModel.isTimerStarted()) {
             viewModel.startTimer();
             setGameButtonsEnabled(true);
-
         }
     }
 
@@ -295,9 +293,9 @@ public class MainActivity extends AppCompatActivity {
         createResetButton();
         createUndoButton();
         createReplayButton();
+        createPauseButton(tint);
         createMuteButton(tint);
         createHowToButton(tint);
-        createPauseButton(tint);
     }
 
     private void createResetButton() {
@@ -310,8 +308,7 @@ public class MainActivity extends AppCompatActivity {
         resetBtn.setOnClickListener(v -> {
             viewModel.resetMaze();
             mazeView.setGoalPositions(viewModel.getGoalPoints());
-            pauseBtn.setEnabled(false);
-            goToNextLevel();
+            resetLevel();
             viewModel.updateCanReplay(viewModel.getPlaybackTrail());
         });
     }
@@ -385,14 +382,14 @@ public class MainActivity extends AppCompatActivity {
         pauseBtn.setEnabled(false);
         pauseBtn.setBackground(null);
         pauseBtn.setOnClickListener(v -> {
-            if (viewModel.isPaused()) {
+            boolean isPaused = Boolean.TRUE.equals(viewModel.getIsPausedLiveData().getValue());
+
+            if (isPaused) {
                 viewModel.resumeTimer();
-                setGameButtonsEnabled(true);
-                resetPausedStateUI();
+                setButtonsExceptPauseEnabled(true);
             } else {
                 viewModel.pauseTimer();
-                setGameButtonsEnabled(false);
-                setPausedStateUI();
+                setButtonsExceptPauseEnabled(false);
                 cancelPlaybackAndJumpToEnd();
             }
         });
@@ -412,6 +409,28 @@ public class MainActivity extends AppCompatActivity {
     private void resetPausedStateUI() {
         initialPauseBtnImage();
         mazeView.setVisibility(View.VISIBLE);
+    }
+
+    private void updatePauseButtonUI(boolean isPaused) {
+        if (pauseBtn == null) return;
+
+        if (isPaused) {
+            pauseBtn.setImageResource(R.drawable.baseline_play_circle_24);
+            pauseBtn.setContentDescription(getString(R.string.resume));
+            mazeView.setVisibility(View.INVISIBLE);
+        } else {
+            pauseBtn.setImageResource(R.drawable.baseline_pause_circle_24);
+            pauseBtn.setContentDescription(getString(R.string.pause));
+            mazeView.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private void updatePauseButtonEnabledState() {
+        boolean hasStarted = Boolean.TRUE.equals(viewModel.getIsTimerStartedLiveData().getValue());
+        boolean isPaused = Boolean.TRUE.equals(viewModel.getIsPausedLiveData().getValue());
+        if (pauseBtn != null) {
+            pauseBtn.setEnabled(gameButtonsEnabled && (hasStarted || isPaused) && !isSolved);
+        }
     }
 
     private LinearLayout setupLevelSpinner() {
@@ -465,7 +484,7 @@ public class MainActivity extends AppCompatActivity {
                     cancelPlaybackAndJumpToEnd();
                     levelSpinner.setEnabled(false);
                     viewModel.setLevel(position);
-                    goToNextLevel();
+                    resetLevel();
                     pauseBtn.setEnabled(false);
                     levelSpinner.setEnabled(true);
                 }
@@ -592,7 +611,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @SuppressWarnings("unchecked")
-    private void restoreViewModelState(Bundle savedInstanceState) {
+    private void restorePersistentAppState(Bundle savedInstanceState) {
         Serializable trailSerializable = savedInstanceState.getSerializable("move_trail");
 
         if (trailSerializable instanceof ArrayList<?> trailList) {
@@ -616,8 +635,9 @@ public class MainActivity extends AppCompatActivity {
 
     private void restoreAppState(Bundle savedInstanceState) {
         isSolved = savedInstanceState.getBoolean("is_solved", false);
-        restoreViewModelState(savedInstanceState);
+        restorePersistentAppState(savedInstanceState);
         restoreTimerState(savedInstanceState);
+        applyMuteState();
     }
 
     private void observeViewModel() {
@@ -697,7 +717,6 @@ public class MainActivity extends AppCompatActivity {
     private void handleAlreadySolved() {
         goalsStatusTextView.setText(getString(R.string.solved));
         replayBtn.setEnabled(viewModel.getPlaybackTrail().size() > 1);
-        pauseBtn.setEnabled(false);
         setGameButtonsEnabled(false);
     }
 
@@ -733,7 +752,7 @@ public class MainActivity extends AppCompatActivity {
                 cancelPlaybackAndJumpToEnd();
                 viewModel.setLevel(next);
                 levelSpinner.setSelection(viewModel.getCurrentLevelIndex());
-                goToNextLevel();
+                resetLevel();
             } else {
                 ToastUtils.showNoMoreLevels(this);
             }
@@ -742,7 +761,6 @@ public class MainActivity extends AppCompatActivity {
 
     private void freezeGameAfterSolve() {
         setGameButtonsEnabled(false);
-        pauseBtn.setEnabled(false);
     }
 
     private void updateGoalStatusText(int remaining) {
@@ -751,7 +769,6 @@ public class MainActivity extends AppCompatActivity {
 
         Drawable flagIcon = AppCompatResources.getDrawable(this, R.drawable.baseline_flag_circle_24);
         if (flagIcon != null) {
-            flagIcon.setTint(ContextCompat.getColor(this, R.color.iconTint));
             flagIcon.setBounds(0, 0, flagIcon.getIntrinsicWidth(), flagIcon.getIntrinsicHeight());
             goalsStatusTextView.setCompoundDrawables(flagIcon, null, flagIcon, null);
         }
@@ -769,6 +786,15 @@ public class MainActivity extends AppCompatActivity {
                 replayBtn.setEnabled(gameButtonsEnabled && Boolean.TRUE.equals(canReplay));
             }
         });
+
+        viewModel.getIsTimerStartedLiveData().observe(this, hasStarted -> {
+            updatePauseButtonEnabledState();
+        });
+
+        viewModel.getIsPausedLiveData().observe(this, isPaused -> {
+            updatePauseButtonUI(Boolean.TRUE.equals(isPaused));
+            updatePauseButtonEnabledState();
+        });
     }
 
     private void observeElapsedTime() {
@@ -783,13 +809,13 @@ public class MainActivity extends AppCompatActivity {
         mazeView.setColorProvider(viewModel::getColorAt);
         mazeView.setShapeProvider(viewModel::getShapeAt);
         mazeView.setGoalPositions(viewModel.getGoalPoints());
-
         observeViewModel();
     }
 
     @Override
     protected void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
+        outState.putBoolean("pause_enabled", pauseBtn.isEnabled());
         outState.putInt("selected_level", viewModel.getCurrentLevelIndex());
 
         // Convert Point list to SerializablePoint list
@@ -908,35 +934,12 @@ public class MainActivity extends AppCompatActivity {
 
         String time = String.format(Locale.US, "%02d:%02d", minutes, seconds);
         timerTextView.setText(getString(R.string.time_format, time));
-
-        if (pauseBtn != null) {
-            pauseBtn.setEnabled(elapsedMillis > 0 && !isSolved);
-        }
     }
 
-    @Override
-    protected void onPause() {
-        super.onPause();
-        isSystemPause = !isChangingConfigurations();
-        if (isSystemPause) {
-            viewModel.pauseTimer();
-        }
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-
-        if (isSystemPause && viewModel.hasTimerStarted() && viewModel.isPaused() && !isSolved) {
-            viewModel.resumeTimer();
-        }
-
-        isSystemPause = false;
-    }
-
-    private void goToNextLevel() {
+    private void resetLevel() {
         isSolved = false;
         viewModel.stopTimer();
+        viewModel.resetTimer();
         viewModel.clearPlaybackTrail();
         syncMazeViewFromViewModel();
         recordStartPosition();
@@ -945,8 +948,12 @@ public class MainActivity extends AppCompatActivity {
 
     private void setGameButtonsEnabled(boolean enabled) {
         gameButtonsEnabled = enabled;
-        if (resetBtn != null)
-            resetBtn.setEnabled(enabled || isSolved); // Keep enabled if maze is solved
+        setButtonsExceptPauseEnabled(enabled);
+        if (pauseBtn != null) pauseBtn.setEnabled(enabled);
+    }
+
+    private void setButtonsExceptPauseEnabled(boolean enabled) {
+        if (resetBtn != null) resetBtn.setEnabled(enabled || isSolved); // Keep enabled if maze is solved
         if (undoBtn != null) undoBtn.setEnabled(enabled);
         if (replayBtn != null) replayBtn.setEnabled(enabled || isSolved);
     }
@@ -954,6 +961,7 @@ public class MainActivity extends AppCompatActivity {
     private void updateGameButtonsState() {
         resetBtn.setEnabled(gameButtonsEnabled || isSolved);
         undoBtn.setEnabled(gameButtonsEnabled);
+        pauseBtn.setEnabled(gameButtonsEnabled);
     }
 
     private void restoreTimerState(Bundle savedInstanceState) {
@@ -966,11 +974,10 @@ public class MainActivity extends AppCompatActivity {
             long solvedTime = viewModel.getSolveTimeMillis();
             updateTimerDisplay(solvedTime);
             setGameButtonsEnabled(false);
-            pauseBtn.setEnabled(false);
             return;
         }
 
-        if (viewModel.hasTimerStarted()) {
+        if (viewModel.isTimerStarted()) {
             if (viewModel.isPaused()) {
                 setPausedStateUI();
             } else {
@@ -1001,5 +1008,11 @@ public class MainActivity extends AppCompatActivity {
         if (!isMuted && soundsLoaded && soundPool != null) {
             soundPool.play(soundId, 1f, 1f, 1, 0, 1f);
         }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        viewModel.pauseTimer();
     }
 }

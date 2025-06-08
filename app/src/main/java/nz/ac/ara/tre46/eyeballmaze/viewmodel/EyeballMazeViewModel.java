@@ -14,6 +14,7 @@ import java.util.ArrayDeque;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Point;
+import android.os.Bundle;
 
 import nz.ac.ara.tre46.eyeballmaze.enums.Color;
 import nz.ac.ara.tre46.eyeballmaze.enums.Direction;
@@ -41,7 +42,9 @@ public class EyeballMazeViewModel extends ViewModel {
     private final MutableLiveData<Integer> moveCountLiveData = new MutableLiveData<>(0);
     private final MutableLiveData<Boolean> moveHappenedLiveData = new MutableLiveData<>(false);
     private final MutableLiveData<Boolean> canReplayLiveData = new MutableLiveData<>(false);
+    private final MutableLiveData<Boolean> isPausedLiveData = new MutableLiveData<>(false);
     private final MutableLiveData<Long> elapsedTimeLiveData = new MutableLiveData<>();
+    private final MutableLiveData<Boolean> isTimerStartedLiveData = new MutableLiveData<>(false);
 
     public EyeballMazeViewModel(Context context, IGame gameInstance) {
         this.context = context.getApplicationContext();
@@ -90,8 +93,16 @@ public class EyeballMazeViewModel extends ViewModel {
         return canReplayLiveData;
     }
 
+    public LiveData<Boolean> getIsPausedLiveData() {
+        return isPausedLiveData;
+    }
+
     public LiveData<Long> getElapsedTimeLiveData() {
         return elapsedTimeLiveData;
+    }
+
+    public LiveData<Boolean> getIsTimerStartedLiveData() {
+        return isTimerStartedLiveData;
     }
 
     public void clearMoveStatusLiveData() {
@@ -102,6 +113,7 @@ public class EyeballMazeViewModel extends ViewModel {
         game.resetCurrentLevel();
         moveCountLiveData.setValue(0);
         resetUndo();
+        resetTimer();
         syncGameState();
     }
 
@@ -269,18 +281,24 @@ public class EyeballMazeViewModel extends ViewModel {
 
     public void startTimer() {
         timeManager.startTimer(elapsedTimeLiveData::postValue);
+        isTimerStartedLiveData.setValue(true);
+        isPausedLiveData.setValue(false);
     }
 
     public void pauseTimer() {
         timeManager.pauseTimer();
+        isPausedLiveData.setValue(true);
     }
 
     public void resumeTimer() {
         timeManager.resumeTimer(elapsedTimeLiveData::postValue);
+        isPausedLiveData.setValue(false);
     }
 
     public void stopTimer() {
         timeManager.stopTimer();
+        isTimerStartedLiveData.setValue(false);
+        isPausedLiveData.setValue(false);
     }
 
     public void markSolved() {
@@ -295,11 +313,17 @@ public class EyeballMazeViewModel extends ViewModel {
         return timeManager.isPaused();
     }
 
-    public boolean hasTimerStarted() {
+    public boolean isTimerStarted() {
         return timeManager.hasStarted();
     }
 
-    public void saveTimerStateToBundle(android.os.Bundle outState) {
+    public void resetTimer() {
+        timeManager.setHasTimerStarted(false);
+        isTimerStartedLiveData.setValue(false);
+        elapsedTimeLiveData.setValue(0L);
+    }
+
+    public void saveTimerStateToBundle(Bundle outState) {
         outState.putLong("start_time", timeManager.getStartTime());
         outState.putBoolean("has_timer_started", timeManager.hasStarted());
         outState.putBoolean("is_paused", timeManager.isPaused());
@@ -307,7 +331,7 @@ public class EyeballMazeViewModel extends ViewModel {
         outState.putLong("solve_time_millis", timeManager.getSolveTimeMillis());
     }
 
-    public void restoreTimerStateFromBundle(android.os.Bundle savedInstanceState) {
+    public void restoreTimerStateFromBundle(Bundle savedInstanceState) {
         long startTime = savedInstanceState.getLong("start_time", 0L);
         boolean hasStarted = savedInstanceState.getBoolean("has_timer_started", false);
         boolean isPaused = savedInstanceState.getBoolean("is_paused", false);
@@ -315,5 +339,7 @@ public class EyeballMazeViewModel extends ViewModel {
         long solveTimeMillis = savedInstanceState.getLong("solve_time_millis", 0L);
 
         timeManager.restoreState(startTime, hasStarted, isPaused, pausedTime, solveTimeMillis);
+        isTimerStartedLiveData.setValue(timeManager.hasStarted());
+        isPausedLiveData.setValue(isPaused);
     }
 }

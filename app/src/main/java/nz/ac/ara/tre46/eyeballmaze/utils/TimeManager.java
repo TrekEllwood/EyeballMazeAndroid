@@ -95,6 +95,10 @@ public class TimeManager {
         return hasTimerStarted;
     }
 
+    public void setHasTimerStarted(boolean started) {
+        this.hasTimerStarted = started;
+    }
+
     public void restoreState(long startTime, boolean hasStarted, boolean isPaused, long pausedTime, long solveTimeMillis) {
         this.startTime = startTime;
         this.hasTimerStarted = hasStarted;
