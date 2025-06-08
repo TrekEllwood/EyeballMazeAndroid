@@ -5,6 +5,7 @@ import android.graphics.PorterDuff;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
@@ -22,6 +23,8 @@ import com.google.android.flexbox.FlexWrap;
 import com.google.android.flexbox.FlexboxLayout;
 import com.google.android.flexbox.JustifyContent;
 
+import java.util.List;
+
 import nz.ac.ara.tre46.eyeballmaze.R;
 
 public class ControlPanelBuilder {
@@ -31,6 +34,7 @@ public class ControlPanelBuilder {
     public final Spinner levelSpinner;
 
     private final Context context;
+    private View rootView;
 
     public ControlPanelBuilder(Context context) {
         this.context = context;
@@ -78,6 +82,7 @@ public class ControlPanelBuilder {
         layout.addView(spinnerRow);
 
         scrollView.addView(layout);
+        this.rootView = scrollView;
         return scrollView;
     }
 
@@ -118,6 +123,7 @@ public class ControlPanelBuilder {
         );
 
         wrapper.addView(scrollView, centered);
+        this.rootView = wrapper;
         return wrapper;
     }
 
@@ -178,5 +184,20 @@ public class ControlPanelBuilder {
         tv.setTextSize(16f);
         tv.setGravity(Gravity.CENTER_HORIZONTAL);
         return tv;
+    }
+
+    public void setLevelOptions(Context context, List<String> labels, int selectedIndex) {
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                context,
+                android.R.layout.simple_spinner_item,
+                labels
+        );
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        levelSpinner.setAdapter(adapter);
+        levelSpinner.setSelection(selectedIndex);
+    }
+
+    public View getRootView() {
+        return rootView;
     }
 }

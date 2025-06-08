@@ -46,6 +46,7 @@ public class EyeballMazeViewModel extends ViewModel {
     private final MutableLiveData<Boolean> isPausedLiveData = new MutableLiveData<>(false);
     private final MutableLiveData<Long> elapsedTimeLiveData = new MutableLiveData<>();
     private final MutableLiveData<Boolean> isTimerStartedLiveData = new MutableLiveData<>(false);
+    private final MutableLiveData<Boolean> isPlayingBackLiveData = new MutableLiveData<>(false);
     private final MutableLiveData<Boolean> isSolvedLiveData = new MutableLiveData<>(false);
 
     public EyeballMazeViewModel(Context context, IGame gameInstance) {
@@ -129,6 +130,10 @@ public class EyeballMazeViewModel extends ViewModel {
 
     public LiveData<Boolean> getIsSolvedLiveData() {
         return isSolvedLiveData;
+    }
+
+    public LiveData<Boolean> getIsPlayingBackLiveData() {
+        return isPlayingBackLiveData;
     }
 
     public void clearMoveStatusLiveData() {
@@ -357,6 +362,10 @@ public class EyeballMazeViewModel extends ViewModel {
         timeManager.setHasTimerStarted(false);
         isTimerStartedLiveData.setValue(false);
         elapsedTimeLiveData.setValue(0L);
+    }
+
+    public void setIsPlayingBack(boolean playingBack) {
+        isPlayingBackLiveData.setValue(playingBack);
     }
 
     public void saveTimerStateToBundle(Bundle outState) {

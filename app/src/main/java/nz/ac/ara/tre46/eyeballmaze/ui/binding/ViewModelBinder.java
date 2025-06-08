@@ -91,14 +91,18 @@ public class ViewModelBinder {
     }
 
     private void observeButtonStates(LifecycleOwner owner) {
-        viewModel.getIsSolvedLiveData().observe(owner, isSolved -> updateUndoButtonState());
-        viewModel.canUndoLiveData().observe(owner, canUndo -> updateUndoButtonState());
-
-        viewModel.getCanReplayLiveData().observe(owner, canReplay -> controls.replayBtn.setEnabled(Boolean.TRUE.equals(canReplay)));
-
-        viewModel.getIsPausedLiveData().observe(owner, this::updatePauseUI);
-
-        viewModel.getIsTimerStartedLiveData().observe(owner, started -> updatePauseButtonEnabled());
+        viewModel.getIsSolvedLiveData().observe(owner, solved -> updateAllGameButtonStates());
+        viewModel.canUndoLiveData().observe(owner, canUndo -> updateAllGameButtonStates());
+        viewModel.getCanReplayLiveData().observe(owner, canReplay -> updateAllGameButtonStates());
+        viewModel.getIsPlayingBackLiveData().observe(owner, isPlayingBack -> updateAllGameButtonStates());
+        viewModel.getIsPausedLiveData().observe(owner, paused -> {
+            updatePauseUI(Boolean.TRUE.equals(paused));
+            updateAllGameButtonStates();
+        });
+        viewModel.getIsTimerStartedLiveData().observe(owner, started -> {
+            updatePauseButtonEnabled();
+            updateAllGameButtonStates();
+        });
     }
 
     private void observeElapsedTime(LifecycleOwner owner) {
@@ -123,10 +127,24 @@ public class ViewModelBinder {
         controls.pauseBtn.setEnabled(hasStarted || isPaused);
     }
 
-    private void updateUndoButtonState() {
+    private void updateAllGameButtonStates() {
         boolean solved = Boolean.TRUE.equals(viewModel.getIsSolvedLiveData().getValue());
         boolean canUndo = Boolean.TRUE.equals(viewModel.canUndoLiveData().getValue());
-        controls.undoBtn.setEnabled(canUndo && !solved);
+        boolean canReplay = Boolean.TRUE.equals(viewModel.getCanReplayLiveData().getValue());
+        boolean paused = Boolean.TRUE.equals(viewModel.getIsPausedLiveData().getValue());
+        boolean playingBack = Boolean.TRUE.equals(viewModel.getIsPlayingBackLiveData().getValue());
+
+        boolean disable = paused || playingBack;
+
+        boolean timerStarted = Boolean.TRUE.equals(viewModel.getIsTimerStartedLiveData().getValue());
+        controls.resetBtn.setEnabled((timerStarted || solved) && !disable);
+
+        controls.undoBtn.setEnabled(canUndo && !solved && !disable);
+        controls.replayBtn.setEnabled((canReplay || solved) && !disable);
+
+        if (controls.levelSpinner != null) {
+            controls.levelSpinner.setEnabled(!disable);
+        }
     }
 
     private void updateTimerDisplay(long elapsedMillis) {
