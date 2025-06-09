@@ -212,9 +212,11 @@ public class EyeballMazeViewModel extends ViewModel {
 
         game.setLevel(index);
         currentLevelIndex = index;
+
         moveCountLiveData.setValue(0);
         clearSolved();
         resetUndo();
+        resetTimer();
         syncGameState();
 
         // Persist the level
@@ -359,8 +361,9 @@ public class EyeballMazeViewModel extends ViewModel {
     }
 
     public void resetTimer() {
-        timeManager.setHasTimerStarted(false);
+        timeManager.resetTimer();
         isTimerStartedLiveData.setValue(false);
+        isPausedLiveData.setValue(false);
         elapsedTimeLiveData.setValue(0L);
     }
 
@@ -384,7 +387,28 @@ public class EyeballMazeViewModel extends ViewModel {
         long solveTimeMillis = savedInstanceState.getLong("solve_time_millis", 0L);
 
         timeManager.restoreState(startTime, hasStarted, isPaused, pausedTime, solveTimeMillis);
+
         isTimerStartedLiveData.setValue(timeManager.hasStarted());
         isPausedLiveData.setValue(isPaused);
+        elapsedTimeLiveData.setValue(timeManager.getElapsedTime());
+
+        if (timeManager.isSolved()) {
+            isSolvedLiveData.setValue(true);
+            elapsedTimeLiveData.setValue(timeManager.getSolveTimeMillis());
+            return;
+        }
+
+        if (hasStarted) {
+            if (isPaused) {
+                isPausedLiveData.setValue(true);
+                isTimerStartedLiveData.setValue(true);
+                elapsedTimeLiveData.setValue(timeManager.getElapsedTime());
+            } else {
+                timeManager.pauseTimer();
+                timeManager.resumeTimer(elapsedTimeLiveData::postValue);
+                isPausedLiveData.setValue(false);
+                isTimerStartedLiveData.setValue(true);
+            }
+        }
     }
 }

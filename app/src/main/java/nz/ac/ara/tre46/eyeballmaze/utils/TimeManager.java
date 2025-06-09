@@ -46,23 +46,26 @@ public class TimeManager {
     }
 
     public void resumeTimer(TimeUpdateListener listener) {
-        if (hasTimerStarted && isPaused) {
-            long pausedDuration = System.currentTimeMillis() - pausedTime;
-            startTime += pausedDuration;
-            isPaused = false;
-
-            timerRunnable = new Runnable() {
-                @Override
-                public void run() {
-                    if (!isPaused) {
-                        long elapsed = System.currentTimeMillis() - startTime;
-                        listener.onTimeUpdate(elapsed);
-                        timerHandler.postDelayed(this, 1000);
-                    }
-                }
-            };
-            timerHandler.post(timerRunnable);
+        if (isSolved()) return;
+        if (!hasTimerStarted || !isPaused || startTime == 0L) {
+            return;
         }
+
+        long pausedDuration = System.currentTimeMillis() - pausedTime;
+        startTime += pausedDuration;
+        isPaused = false;
+
+        timerRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (!isPaused) {
+                    long elapsed = System.currentTimeMillis() - startTime;
+                    listener.onTimeUpdate(elapsed);
+                    timerHandler.postDelayed(this, 1000);
+                }
+            }
+        };
+        timerHandler.post(timerRunnable);
     }
 
     public void stopTimer() {
@@ -72,6 +75,10 @@ public class TimeManager {
     }
 
     public long getElapsedTime() {
+        if (!hasTimerStarted || startTime == 0L) {
+            return 0L;
+        }
+
         if (isPaused) {
             return pausedTime - startTime;
         }
@@ -91,6 +98,13 @@ public class TimeManager {
     public void clearSolved() {
         solveTimeMillis = 0L;
         stopTimer();
+    }
+
+    public void resetTimer() {
+        stopTimer();
+        startTime = 0L;
+        pausedTime = 0L;
+        solveTimeMillis = 0L;
     }
 
     public long getSolveTimeMillis() {
