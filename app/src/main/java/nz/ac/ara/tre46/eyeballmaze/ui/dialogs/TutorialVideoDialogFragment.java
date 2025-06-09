@@ -31,7 +31,7 @@ public class TutorialVideoDialogFragment extends DialogFragment {
     public View onCreateView(@NonNull LayoutInflater inflater,
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
-        // Create PlayerView
+
         playerView = new PlayerView(requireContext());
         playerView.setUseController(true);
         playerView.setControllerHideOnTouch(true);

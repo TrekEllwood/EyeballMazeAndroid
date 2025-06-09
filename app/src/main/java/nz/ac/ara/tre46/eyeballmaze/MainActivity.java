@@ -363,7 +363,6 @@ public class MainActivity extends AppCompatActivity {
         outState.putBoolean("pause_enabled", controlPanel.pauseBtn.isEnabled());
         outState.putInt("selected_level", viewModel.getCurrentLevelIndex());
 
-        // Convert Point list to SerializablePoint list
         ArrayList<SerializablePoint> serializableTrail = new ArrayList<>();
         for (Point p : viewModel.getPlaybackTrail()) {
             serializableTrail.add(new SerializablePoint(p.x, p.y));

@@ -55,7 +55,6 @@ public class EyeballMazeViewModel extends ViewModel {
         syncGameState();
     }
 
-    // === Accessors ===
     public LiveData<Integer> getEyeballRowLiveData() {
         return rowLiveData;
     }
@@ -189,7 +188,6 @@ public class EyeballMazeViewModel extends ViewModel {
         return game.getRemainingGoalPoints();
     }
 
-    // === Internal sync ===
     public void syncGameState() {
         rowLiveData.setValue(game.getEyeballRow());
         colLiveData.setValue(game.getEyeballColumn());
@@ -371,6 +369,29 @@ public class EyeballMazeViewModel extends ViewModel {
         isPlayingBackLiveData.setValue(playingBack);
     }
 
+    private void applyTimerUIState() {
+        isTimerStartedLiveData.setValue(timeManager.hasStarted());
+        isPausedLiveData.setValue(timeManager.isPaused());
+
+        if (timeManager.isSolved()) {
+            isSolvedLiveData.setValue(true);
+            elapsedTimeLiveData.setValue(timeManager.getSolveTimeMillis());
+        } else {
+            elapsedTimeLiveData.setValue(timeManager.getElapsedTime());
+        }
+    }
+
+    private void resumeTimerWhenNeeded() {
+        if (!timeManager.hasStarted()) return;
+        if (timeManager.isPaused()) return;
+        if (timeManager.isSolved()) return;
+
+        timeManager.pauseTimer();
+        timeManager.resumeTimer(elapsedTimeLiveData::postValue);
+        isPausedLiveData.setValue(false);
+        isTimerStartedLiveData.setValue(true);
+    }
+
     public void saveTimerStateToBundle(Bundle outState) {
         outState.putLong("start_time", timeManager.getStartTime());
         outState.putBoolean("has_timer_started", timeManager.hasStarted());
@@ -388,26 +409,16 @@ public class EyeballMazeViewModel extends ViewModel {
 
         timeManager.restoreState(startTime, hasStarted, isPaused, pausedTime, solveTimeMillis);
 
-        isTimerStartedLiveData.setValue(timeManager.hasStarted());
-        isPausedLiveData.setValue(isPaused);
-        elapsedTimeLiveData.setValue(timeManager.getElapsedTime());
-
         if (timeManager.isSolved()) {
-            isSolvedLiveData.setValue(true);
-            elapsedTimeLiveData.setValue(timeManager.getSolveTimeMillis());
+            applyTimerUIState();
             return;
         }
 
         if (hasStarted) {
             if (isPaused) {
-                isPausedLiveData.setValue(true);
-                isTimerStartedLiveData.setValue(true);
-                elapsedTimeLiveData.setValue(timeManager.getElapsedTime());
+                applyTimerUIState();
             } else {
-                timeManager.pauseTimer();
-                timeManager.resumeTimer(elapsedTimeLiveData::postValue);
-                isPausedLiveData.setValue(false);
-                isTimerStartedLiveData.setValue(true);
+                resumeTimerWhenNeeded();
             }
         }
     }
