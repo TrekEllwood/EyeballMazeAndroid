@@ -2,6 +2,7 @@ package nz.ac.ara.tre46.eyeballmaze.ui.components;
 
 import android.content.Context;
 import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,6 +15,7 @@ import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import androidx.appcompat.content.res.AppCompatResources;
 import androidx.core.content.ContextCompat;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -32,6 +34,7 @@ public class ControlPanelBuilder {
     public final Button resetBtn, undoBtn, replayBtn;
     public final ImageButton pauseBtn, muteBtn, howToBtn;
     public final Spinner levelSpinner;
+    public Drawable flagIcon;
 
     private final Context context;
     private View rootView;
@@ -59,6 +62,8 @@ public class ControlPanelBuilder {
         titleTextView = new TextView(context);
         titleTextView.setTextSize(20f);
         titleTextView.setGravity(Gravity.CENTER_HORIZONTAL);
+
+        setupFlagIcon();
     }
 
     public LinearLayout buildSpinnerRow() {
@@ -195,6 +200,15 @@ public class ControlPanelBuilder {
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         levelSpinner.setAdapter(adapter);
         levelSpinner.setSelection(selectedIndex);
+    }
+
+    private void setupFlagIcon() {
+        flagIcon = AppCompatResources.getDrawable(context, R.drawable.baseline_flag_circle_24);
+        if (flagIcon != null) {
+            flagIcon.setTint(ContextCompat.getColor(context, R.color.icon_tint));
+            flagIcon.setBounds(0, 0, flagIcon.getIntrinsicWidth(), flagIcon.getIntrinsicHeight());
+            goalsStatusTextView.setCompoundDrawables(flagIcon, null, flagIcon, null);
+        }
     }
 
     public View getRootView() {

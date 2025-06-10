@@ -64,7 +64,9 @@ public class ViewModelBinder {
     }
 
     private void observeMoveFeedback(LifecycleOwner owner) {
-        viewModel.getMoveCountLiveData().observe(owner, count -> controls.moveCounterTextView.setText(activity.getString(R.string.moves_format, count)));
+        viewModel.getMoveCountLiveData().observe(owner, count ->
+                controls.moveCounterTextView.setText(activity.getString(R.string.moves_format, count))
+        );
 
         viewModel.getMoveHappenedLiveData().observe(owner, happened -> {
             if (Boolean.TRUE.equals(happened)) {

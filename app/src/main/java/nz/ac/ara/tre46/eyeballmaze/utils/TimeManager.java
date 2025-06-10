@@ -1,6 +1,7 @@
 package nz.ac.ara.tre46.eyeballmaze.utils;
 
 import android.os.Handler;
+import android.os.Looper;
 
 public class TimeManager {
     private long startTime = 0L;
@@ -9,7 +10,7 @@ public class TimeManager {
     private boolean isPaused = false;
     private boolean hasTimerStarted = false;
 
-    private final Handler timerHandler = new Handler();
+    private final Handler timerHandler = new Handler(Looper.getMainLooper());
     private Runnable timerRunnable;
 
     public interface TimeUpdateListener {

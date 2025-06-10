@@ -10,6 +10,7 @@ import android.graphics.Path;
 import android.graphics.RectF;
 import android.graphics.Point;
 import android.os.Handler;
+import android.os.Looper;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
@@ -36,18 +37,17 @@ public class MazeView extends View {
     private final Paint goalPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint goalTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint failedPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Handler handler = new Handler();
-    private Runnable clearFailedRunnable;
+    private final Handler handler = new Handler(Looper.getMainLooper());
     private final Path reusablePath = new Path();
     private final RectF reusableGoalRect = new RectF();
     private final Set<String> goalKeys = new HashSet<>();
-    private Bitmap eyeballBitmap = null;
     private final Matrix matrix = new Matrix();
     private float cellW, cellH;
+    private Runnable clearFailedRunnable;
+    private Bitmap eyeballBitmap = null, goalLabelIcon;
     private OnCellTapListener tapListener;
     private ColorProvider colorProvider;
     private ShapeProvider shapeProvider;
-    private Bitmap goalLabelIcon;
 
     public MazeView(Context context) {
         super(context);
@@ -112,9 +112,16 @@ public class MazeView extends View {
      * Called by Activity when the ViewModel’s eyeball‐row/col change
      */
     public void setEyeballPosition(int row, int col) {
-        this.eyeballRow = row;
-        this.eyeballCol = col;
-        invalidate();
+        if (this.eyeballRow != row || this.eyeballCol != col) {
+            int prevRow = this.eyeballRow;
+            int prevCol = this.eyeballCol;
+
+            this.eyeballRow = row;
+            this.eyeballCol = col;
+
+            invalidateCell(prevRow, prevCol);
+            invalidateCell(row, col);
+        }
     }
 
     /**
@@ -122,15 +129,15 @@ public class MazeView extends View {
      */
     public void setCurrentSquareIsGoal(boolean isGoal) {
         this.currentGoal = isGoal;
-        invalidate();
+        invalidateCell(eyeballRow, eyeballCol);
     }
 
     public void setGoalPositions(Set<Point> goals) {
         goalKeys.clear();
         for (Point p : goals) {
-            goalKeys.add(p.y + "," + p.x); // row,col format
+            goalKeys.add(p.y + "," + p.x);
+            invalidateCell(p.y, p.x);
         }
-        invalidate();
     }
 
     public void setEyeballBitmap(Bitmap bmp) {
@@ -262,7 +269,7 @@ public class MazeView extends View {
 
     public void setDirection(Direction d) {
         this.currentDirection = d;
-        invalidate();
+        invalidateCell(eyeballRow, eyeballCol);
     }
 
     private void drawShape(Canvas canvas, Shape shape,
@@ -394,7 +401,7 @@ public class MazeView extends View {
     public void setFailedMoveAt(int row, int col) {
         this.failedRow = row;
         this.failedCol = col;
-        invalidate();
+        invalidateCell(failedRow, failedCol);
 
         if (clearFailedRunnable != null) {
             handler.removeCallbacks(clearFailedRunnable);
@@ -407,6 +414,25 @@ public class MazeView extends View {
     public void clearFailedMove() {
         this.failedRow = -1;
         this.failedCol = -1;
-        invalidate();
+        invalidateCell(failedRow, failedCol);
+    }
+
+    private void invalidateCell(int row, int col) {
+        if (row < 0 || col < 0 || cellW == 0 || cellH == 0) return;
+
+        float offsetX = (getWidth() - boardCols * cellW) / 2f;
+        float offsetY = (getHeight() - boardRows * cellH) / 2f;
+
+        float left = offsetX + col * cellW;
+        float top = offsetY + row * cellH;
+        float right = left + cellW;
+        float bottom = top + cellH;
+
+        postInvalidateOnAnimation(
+                (int) left,
+                (int) top,
+                (int) right,
+                (int) bottom
+        );
     }
 }

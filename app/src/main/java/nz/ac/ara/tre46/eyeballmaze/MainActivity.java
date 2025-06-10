@@ -3,6 +3,7 @@ package nz.ac.ara.tre46.eyeballmaze;
 import android.content.res.Configuration;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
@@ -44,7 +45,7 @@ public class MainActivity extends AppCompatActivity {
     private ControlActionBinder controlActionBinder;
     private ViewModelBinder viewModelBinder;
     private SoundManager soundManager;
-    private final Handler playbackHandler = new Handler();
+    private final Handler playbackHandler = new Handler(Looper.getMainLooper());
     private PlaybackManager playbackManager;
 
     @Override
@@ -250,7 +251,7 @@ public class MainActivity extends AppCompatActivity {
         mazeView.setVisibility(View.VISIBLE);
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings("deprecation")
     private void restorePersistentAppState(Bundle savedInstanceState) {
         Serializable trailSerializable = savedInstanceState.getSerializable("move_trail");
 
@@ -259,6 +260,7 @@ public class MainActivity extends AppCompatActivity {
                     .allMatch(item -> item instanceof SerializablePoint);
 
             if (allAreSerializablePoints) {
+                @SuppressWarnings("unchecked")
                 ArrayList<SerializablePoint> trailData = (ArrayList<SerializablePoint>) trailList;
 
                 List<Point> points = new ArrayList<>();
@@ -317,10 +319,10 @@ public class MainActivity extends AppCompatActivity {
         mazeView.setTouchEnabled(false);
 
         long solvedTime  = viewModel.getSolveTimeMillis();
-        updateTimerDisplay(solvedTime );
+        updateTimerDisplay(solvedTime);
         controlPanel.goalsStatusTextView.setText(getString(R.string.solved));
 
-        playSolvedFeedback(solvedTime );
+        playSolvedFeedback(solvedTime);
         showLevelCompleteMsg();
     }
 
@@ -383,7 +385,6 @@ public class MainActivity extends AppCompatActivity {
         mazeView.setColorProvider(viewModel::getColorAt);
         mazeView.setShapeProvider(viewModel::getShapeAt);
         updateAppTitle();
-        mazeView.invalidate();
     }
 
     private void updateAppTitle() {
