@@ -21,7 +21,6 @@ public class SquareHolder implements ISquareHolder {
 		}
     }
 
-	// CHANGED
     @Override
     public void resetBoard(int width, int height) {
 		if (width <= 0 || height <= 0) {
