@@ -7,7 +7,6 @@ EyeballMaze is an Android puzzle game / demo app where the player guides an eyeb
 - About
 - Features
 - Requirements
-- Building & running (Windows / PowerShell)
 - Project structure
 - Contributing
 - License
