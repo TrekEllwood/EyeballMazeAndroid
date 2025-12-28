@@ -43,6 +43,7 @@ public class ViewModelBinder {
         observeGameState(owner);
         observeButtonStates(owner);
         observeElapsedTime(owner);
+        observeLeaderboard(owner);
     }
 
     private void observeMazePosition(LifecycleOwner owner) {
@@ -109,6 +110,27 @@ public class ViewModelBinder {
 
     private void observeElapsedTime(LifecycleOwner owner) {
         viewModel.getElapsedTimeLiveData().observe(owner, this::updateTimerDisplay);
+    }
+
+    private void observeLeaderboard(LifecycleOwner owner) {
+        viewModel.getBestTimeLiveData().observe(owner, bestTime -> {
+            updateLeaderboardDisplay();
+        });
+
+        viewModel.getBestMovesLiveData().observe(owner, bestMoves -> {
+            updateLeaderboardDisplay();
+        });
+    }
+
+    private void updateLeaderboardDisplay() {
+        String bestTime = viewModel.getBestTimeLiveData().getValue();
+        String bestMoves = viewModel.getBestMovesLiveData().getValue();
+
+        if (bestTime == null) bestTime = "--:--";
+        if (bestMoves == null) bestMoves = "--";
+
+        String display = "Best: " + bestTime + " / " + bestMoves + " moves";
+        controls.leaderboardTextView.setText(display);
     }
 
     private void updatePauseUI(boolean paused) {

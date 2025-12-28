@@ -25,4 +25,6 @@
     <string name="time_format">Time: %1$s</string>
     <string name="solved_time_format">Level solved in %1$s</string>
     <string name="help">Help</string>
+    <string name="new_record">NEW RECORD!</string>
+    <string name="new_record_level_complete">NEW RECORD! Level complete! Next?</string>
 </resources>

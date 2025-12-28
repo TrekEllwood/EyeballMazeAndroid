@@ -23,6 +23,7 @@ import nz.ac.ara.tre46.eyeballmaze.enums.Message;
 import nz.ac.ara.tre46.eyeballmaze.enums.Shape;
 import nz.ac.ara.tre46.eyeballmaze.interfaces.IGame;
 import nz.ac.ara.tre46.eyeballmaze.utils.TimeManager;
+import nz.ac.ara.tre46.eyeballmaze.utils.LeaderboardManager;
 
 public class EyeballMazeViewModel extends ViewModel {
     private final IGame game;
@@ -32,6 +33,7 @@ public class EyeballMazeViewModel extends ViewModel {
     private static final int MAX_UNDO = 10;
     private int currentLevelIndex = 0;
     private final TimeManager timeManager = new TimeManager();
+    private final LeaderboardManager leaderboardManager;
 
     private final MutableLiveData<Integer> rowLiveData = new MutableLiveData<>();
     private final MutableLiveData<Integer> colLiveData = new MutableLiveData<>();
@@ -48,11 +50,16 @@ public class EyeballMazeViewModel extends ViewModel {
     private final MutableLiveData<Boolean> isTimerStartedLiveData = new MutableLiveData<>(false);
     private final MutableLiveData<Boolean> isPlayingBackLiveData = new MutableLiveData<>(false);
     private final MutableLiveData<Boolean> isSolvedLiveData = new MutableLiveData<>(false);
+    private final MutableLiveData<String> bestTimeLiveData = new MutableLiveData<>("--:--");
+    private final MutableLiveData<String> bestMovesLiveData = new MutableLiveData<>("--");
+    private final MutableLiveData<Boolean> isNewRecordLiveData = new MutableLiveData<>(false);
 
     public EyeballMazeViewModel(Context context, IGame gameInstance) {
         this.context = context.getApplicationContext();
         this.game = gameInstance;
+        this.leaderboardManager = new LeaderboardManager(context);
         syncGameState();
+        updateBestRecordsForCurrentMaze();
     }
 
     public LiveData<Integer> getEyeballRowLiveData() {
@@ -133,6 +140,18 @@ public class EyeballMazeViewModel extends ViewModel {
 
     public LiveData<Boolean> getIsPlayingBackLiveData() {
         return isPlayingBackLiveData;
+    }
+
+    public LiveData<String> getBestTimeLiveData() {
+        return bestTimeLiveData;
+    }
+
+    public LiveData<String> getBestMovesLiveData() {
+        return bestMovesLiveData;
+    }
+
+    public LiveData<Boolean> getIsNewRecordLiveData() {
+        return isNewRecordLiveData;
     }
 
     public void clearMoveStatusLiveData() {
@@ -216,6 +235,7 @@ public class EyeballMazeViewModel extends ViewModel {
         resetUndo();
         resetTimer();
         syncGameState();
+        updateBestRecordsForCurrentMaze();
 
         // Persist the level
         SharedPreferences prefs = context.getSharedPreferences("EyeballMazePrefs", Context.MODE_PRIVATE);
@@ -340,6 +360,7 @@ public class EyeballMazeViewModel extends ViewModel {
     public void clearSolved() {
         timeManager.clearSolved();
         isSolvedLiveData.setValue(false);
+        isNewRecordLiveData.setValue(false);
     }
 
     public boolean isSolved() {
@@ -348,6 +369,30 @@ public class EyeballMazeViewModel extends ViewModel {
 
     public long getSolveTimeMillis() {
         return timeManager.getSolveTimeMillis();
+    }
+
+    public int getMoveCount() {
+        Integer count = moveCountLiveData.getValue();
+        return count != null ? count : 0;
+    }
+
+    public boolean checkAndSaveRecord() {
+        int mazeId = getCurrentMazeId();
+        long timeMillis = getSolveTimeMillis();
+        int moves = getMoveCount();
+
+        boolean isNewRecord = leaderboardManager.checkAndUpdateRecord(mazeId, timeMillis, moves);
+        isNewRecordLiveData.setValue(isNewRecord);
+
+        updateBestRecordsForCurrentMaze();
+
+        return isNewRecord;
+    }
+
+    private void updateBestRecordsForCurrentMaze() {
+        int mazeId = getCurrentMazeId();
+        bestTimeLiveData.setValue(leaderboardManager.formatBestTime(mazeId));
+        bestMovesLiveData.setValue(leaderboardManager.formatBestMoves(mazeId));
     }
 
     public boolean isPaused() {

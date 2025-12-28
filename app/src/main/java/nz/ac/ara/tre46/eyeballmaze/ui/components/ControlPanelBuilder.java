@@ -30,7 +30,7 @@ import java.util.List;
 import nz.ac.ara.tre46.eyeballmaze.R;
 
 public class ControlPanelBuilder {
-    public final TextView titleTextView, spinnerLabel, goalsStatusTextView, moveCounterTextView, timerTextView;
+    public final TextView titleTextView, spinnerLabel, goalsStatusTextView, moveCounterTextView, timerTextView, leaderboardTextView;
     public final Button resetBtn, undoBtn, replayBtn;
     public final ImageButton pauseBtn, muteBtn, howToBtn;
     public final Spinner levelSpinner;
@@ -59,6 +59,7 @@ public class ControlPanelBuilder {
         goalsStatusTextView = createCenteredTextView();
         moveCounterTextView = createCenteredTextView();
         timerTextView = createCenteredTextView();
+        leaderboardTextView = createLeaderboardTextView();
         titleTextView = new TextView(context);
         titleTextView.setTextSize(20f);
         titleTextView.setGravity(Gravity.CENTER_HORIZONTAL);
@@ -82,6 +83,7 @@ public class ControlPanelBuilder {
         layout.addView(goalsStatusTextView);
         layout.addView(moveCounterTextView);
         layout.addView(timerTextView);
+        layout.addView(leaderboardTextView);
         layout.addView(horizontalRow(resetBtn, undoBtn, replayBtn));
         layout.addView(horizontalRow(pauseBtn, muteBtn, howToBtn));
         layout.addView(spinnerRow);
@@ -98,6 +100,7 @@ public class ControlPanelBuilder {
         layout.addView(goalsStatusTextView);
         layout.addView(moveCounterTextView);
         layout.addView(timerTextView);
+        layout.addView(leaderboardTextView);
         layout.addView(flexButtonRow(resetBtn, undoBtn, replayBtn));
         layout.addView(horizontalRow(pauseBtn, muteBtn, howToBtn));
         layout.addView(spinnerRow);
@@ -188,6 +191,14 @@ public class ControlPanelBuilder {
         TextView tv = new TextView(context);
         tv.setTextSize(16f);
         tv.setGravity(Gravity.CENTER_HORIZONTAL);
+        return tv;
+    }
+
+    private TextView createLeaderboardTextView() {
+        TextView tv = new TextView(context);
+        tv.setTextSize(14f);
+        tv.setGravity(Gravity.CENTER_HORIZONTAL);
+        tv.setPadding(8, 4, 8, 4);
         return tv;
     }
 

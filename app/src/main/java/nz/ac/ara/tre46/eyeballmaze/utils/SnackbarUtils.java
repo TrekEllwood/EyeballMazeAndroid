@@ -26,8 +26,8 @@ public class SnackbarUtils {
         showCenteredShort(anchorView, message);
     }
 
-    public static void showLevelComplete(View anchorView, String actionLabel, View.OnClickListener onNextClick) {
-        Snackbar snackbar = Snackbar.make(anchorView, R.string.level_complete, Snackbar.LENGTH_LONG);
+    public static void showLevelComplete(View anchorView, String message, String actionLabel, View.OnClickListener onNextClick) {
+        Snackbar snackbar = Snackbar.make(anchorView, message, Snackbar.LENGTH_LONG);
         snackbar.setAction(actionLabel, onNextClick);
         snackbar.show();
     }

@@ -10,8 +10,8 @@ android {
         applicationId "nz.ac.ara.tre46.eyeballmaze"
         minSdk 28
         targetSdk 36
-        versionCode 10249
-        versionName "1.2.49"
+        versionCode 10250
+        versionName "1.2.50"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }

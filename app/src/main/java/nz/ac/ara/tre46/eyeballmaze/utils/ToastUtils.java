@@ -14,10 +14,16 @@ public class ToastUtils {
         Toast.makeText(context, message, Toast.LENGTH_LONG).show();
     }
 
-    public static void showSolvedMessage(Context context, String timeFormatted) {
+    public static void showSolvedMessage(Context context, String timeFormatted, int moveCount, boolean isNewRecord) {
         String message = context.getString(R.string.solved) + "\n" +
-                context.getString(R.string.time_format, timeFormatted);
-        showShort(context, message);
+                context.getString(R.string.time_format, timeFormatted) + "\n" +
+                context.getString(R.string.moves_format, moveCount);
+
+        if (isNewRecord) {
+            message += "\n" + context.getString(R.string.new_record);
+        }
+
+        showLong(context, message);
     }
 
     public static void showNoMoreLevels(Context context) {

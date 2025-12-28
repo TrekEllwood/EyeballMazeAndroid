@@ -322,11 +322,13 @@ public class MainActivity extends AppCompatActivity {
         updateTimerDisplay(solvedTime);
         controlPanel.goalsStatusTextView.setText(getString(R.string.solved));
 
-        playSolvedFeedback(solvedTime);
-        showLevelCompleteMsg();
+        boolean isNewRecord = viewModel.checkAndSaveRecord();
+
+        playSolvedFeedback(solvedTime, isNewRecord);
+        showLevelCompleteMsg(isNewRecord);
     }
 
-    private void playSolvedFeedback(long elapsed) {
+    private void playSolvedFeedback(long elapsed, boolean isNewRecord) {
         soundManager.playWin();
 
         String solveTimeFormatted = String.format(Locale.US, "%02d:%02d",
@@ -334,11 +336,15 @@ public class MainActivity extends AppCompatActivity {
                 (elapsed / 1000) % 60
         );
 
-        ToastUtils.showSolvedMessage(this, solveTimeFormatted);
+        ToastUtils.showSolvedMessage(this, solveTimeFormatted, viewModel.getMoveCount(), isNewRecord);
     }
 
-    private void showLevelCompleteMsg() {
-        SnackbarUtils.showLevelComplete(findViewById(android.R.id.content), getString(R.string.next), v -> {
+    private void showLevelCompleteMsg(boolean isNewRecord) {
+        String message = isNewRecord
+                ? getString(R.string.new_record_level_complete)
+                : getString(R.string.level_complete);
+
+        SnackbarUtils.showLevelComplete(findViewById(android.R.id.content), message, getString(R.string.next), v -> {
             int next = viewModel.getCurrentLevelIndex() + 1;
             if (next < viewModel.getLevelCount()) {
                 playbackManager.cancelPlaybackAndJumpToEnd();
